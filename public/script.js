@@ -30,6 +30,11 @@ document.addEventListener('DOMContentLoaded', () => {
         height: '0',
         width: '0',
         videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          controls: 0
+        },
         events: {
           'onReady': onPlayerReady,
           'onError': onPlayerError
