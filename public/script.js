@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         events: {
           'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange,
           'onError': onPlayerError
         }
       });
@@ -44,11 +45,26 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function onPlayerReady(event) {
-    setTimeout(() => {
-      const levels = player.getAvailableQualityLevels();
-      const max = levels && levels.length ? levels[0] : 'Unknown';
-      showResult(max);
-    }, 200);
+    console.log("Player is ready. Waiting for state change to get quality.");
+  }
+
+  function onPlayerStateChange(event) {
+    console.log("Player state changed: " + event.data);
+    if (event.data == YT.PlayerState.PLAYING) {
+      setTimeout(() => {
+        const levels = player.getAvailableQualityLevels();
+        console.log("Available quality levels:", levels);
+        let maxQuality = 'Unknown';
+        if (levels && levels.length > 0) {
+            if (levels[0] === 'auto' && levels.length > 1) {
+                maxQuality = levels[1];
+            } else {
+                maxQuality = levels[0];
+            }
+        }
+        showResult(maxQuality);
+      }, 500);
+    }
   }
 
   function onPlayerError(event) {
