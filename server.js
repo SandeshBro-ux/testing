@@ -110,9 +110,8 @@ async function getVideoInfo(url) {
   try {
     const videoData = await youtubedl(url, {
       dumpJson: true,
-      noCheckCertificates: true,
-      forceIpv4: true,
-      timeout: 30000
+      noCheckCertificate: true,
+      forceIpv4: true
     });
 
     if (!videoData) {
