@@ -45,12 +45,12 @@ app.get('/', (req, res) => {
 app.get('/debug', async (req, res) => {
   let ytdlexecBinaryStatus = 'Not checked / N/A';
   try {
-    const versionOutput = await youtubedl.raw('--version');
+    const versionOutput = await youtubedl.raw('--version', {stdio: ['pipe', 'pipe', 'pipe'] });
     ytdlexecBinaryStatus = `Operational (yt-dlp version: ${versionOutput.stdout.trim()})`;
     logMessage(`Debug: yt-dlp binary check successful: ${ytdlexecBinaryStatus}`);
   } catch (e) {
-    ytdlexecBinaryStatus = `Error checking yt-dlp binary: ${e.message}`;
-    logMessage(`Debug: yt-dlp binary check failed: ${e.message}`, true);
+    ytdlexecBinaryStatus = `Error checking yt-dlp binary: ${e.message} Stderr: ${e.stderr}`;
+    logMessage(`Debug: yt-dlp binary check failed: ${e.message} Stderr: ${e.stderr}`, true);
   }
 
   const debugInfo = {
@@ -66,7 +66,7 @@ app.get('/debug', async (req, res) => {
       PORT: process.env.PORT
     },
     youtubeDlExecStatus: ytdlexecBinaryStatus,
-    directoryListingCurrent: fs.readdirSync(__dirname) // Basic check
+    directoryListingCurrent: fs.readdirSync(__dirname)
   };
   res.json(debugInfo);
 });
@@ -89,11 +89,11 @@ app.post('/api/video-info', async (req, res) => {
 
   } catch (error) {
     logMessage(`Error processing request for ${urlToProcess}: ${error.message}`, true);
-    console.error(`Underlying error stack for ${urlToProcess} (if any):`, error.stack); 
+    console.error(`Underlying error stack for ${urlToProcess} (if any):`, error.stack);
     res.status(500).json({ 
       success: false, 
       message: 'Error getting video information', 
-      error: error.message // Pass the processed error message
+      error: error.message
     });
   }
 });
@@ -110,9 +110,9 @@ async function getVideoInfo(url) {
   try {
     const videoData = await youtubedl(url, {
       dumpJson: true,
-      // Add any specific yt-dlp flags if needed, e.g.:
-      // noCheckCertificates: true, // For potential SSL issues
-      // formatSort: 'height' // If you want server to sort by height, though client-side processing is fine
+      noCheckCertificates: true,
+      forceIpv4: true,
+      timeout: 30000
     });
 
     if (!videoData) {
@@ -134,7 +134,6 @@ async function getVideoInfo(url) {
       }
     });
     
-    // Fallback if maxHeight is still 0 but formats exist (e.g. only audio or non-standard res)
     if (maxHeight === 0 && formats.length > 0) {
         logMessage(`No direct video height found for ${url}, attempting to parse resolution string.`);
         formats.forEach(format => {
@@ -151,8 +150,14 @@ async function getVideoInfo(url) {
             }
         });
     }
-    if (maxHeight === 0) {
-        logMessage(`Could not determine maximum video resolution for ${url}. Available formats might be audio-only or have unparsable resolutions.`);
+    if (maxHeight === 0 && !videoData.acodec) {
+        logMessage(`Could not determine maximum video resolution and no audio codec found for ${url}. It might not be a valid video.`, true);
+        if (formats.every(f => f.vcodec === 'none' && f.acodec === 'none')) {
+             throw new Error('The URL does not point to a valid video or audio stream.');
+        }
+    } else if (maxHeight === 0 && videoData.acodec) {
+        logMessage(`Content for ${url} appears to be audio-only or has no standard video resolution data.`);
+        maxQualityLabel = 'Audio Only'
     }
 
     return {
@@ -173,12 +178,16 @@ async function getVideoInfo(url) {
     };
 
   } catch (error) {
-    // youtube-dl-exec errors often include stderr from the binary
     const stderr = error.stderr || 'N/A';
     logMessage(`Error using youtube-dl-exec for ${url}: ${error.message}. Stderr: ${stderr}`, true);
     
-    let detailedErrorMessage = `Failed to process video with youtube-dl-exec.`;
-    if (stderr.includes("Unsupported URL")) {
+    let detailedErrorMessage = `Failed to process video.`;
+
+    if (stderr.includes("HTTP Error 429") || stderr.includes("Too Many Requests")) {
+        detailedErrorMessage = "Our service is experiencing high demand from YouTube. Please try again in a few moments.";
+    } else if (stderr.includes("Sign in to confirm you.re not a bot")) {
+        detailedErrorMessage = "YouTube is asking to verify you're not a bot. This can happen with high server traffic. Please try again later.";
+    } else if (stderr.includes("Unsupported URL")) {
         detailedErrorMessage = "The provided URL is not supported or is invalid.";
     } else if (stderr.includes("Video unavailable") || stderr.includes("Private video") || stderr.includes("This video is unavailable")) {
         detailedErrorMessage = "This video is unavailable (private, deleted, or restricted by YouTube).";
@@ -186,10 +195,15 @@ async function getVideoInfo(url) {
         detailedErrorMessage = "This video is age-restricted and cannot be processed.";
     } else if (stderr.includes("ERROR 410") || stderr.includes("HTTP Error 410")) {
         detailedErrorMessage = "This video is no longer available (Error 410: Gone). It may have been permanently deleted.";
+    } else if (error.message.includes('No data returned')) {
+        detailedErrorMessage = "Could not retrieve any information for this video. It might be invalid or an issue with the processing service.";
+    } else if (error.message.includes('does not point to a valid video or audio stream')) {
+        detailedErrorMessage = "The URL does not seem to point to a valid video or audio.";
     } else if (stderr !== 'N/A' && stderr.trim() !== '') {
-        detailedErrorMessage += ` Technical details: ${stderr.split(/[\r\n]+/)[0].substring(0, 200)}`; // First line, capped length
+        detailedErrorMessage = "An unexpected error occurred while trying to fetch video details. Please try a different video or check the URL.";
+        logMessage(`Uncaught yt-dlp stderr for ${url}: ${stderr}`, true); 
     } else {
-        detailedErrorMessage += ` Details: ${error.message.substring(0,200)}`;
+        detailedErrorMessage = `An unexpected error occurred: ${error.message.substring(0,100)}`;
     }
     throw new Error(detailedErrorMessage);
   }
