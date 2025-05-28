@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Video Info Extractor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>YouTube Video Info Extractor</h1>
+      <p>Enter a YouTube URL to get information about the video, including the maximum available quality.</p>
+    </header>
+    
+    <main>
+      <div class="input-section">
+        <form id="videoForm">
+          <div class="form-group">
+            <label for="videoUrl">YouTube Video URL:</label>
+            <input 
+              type="text" 
+              id="videoUrl" 
+              name="videoUrl" 
+              placeholder="https://youtu.be/POGIkh_aLDg" 
+              required
+            >
+          </div>
+          <button type="submit" id="submitBtn">Get Video Info</button>
+        </form>
+      </div>
+      
+      <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p>Fetching video information...</p>
+      </div>
+      
+      <div class="results" id="results">
+        <h2>Video Information</h2>
+        <div id="errorMsg" class="error-message"></div>
+        
+        <div class="video-info-container">
+          <div class="video-thumbnail">
+            <img id="thumbnail" src="" alt="Video thumbnail">
+          </div>
+          
+          <div class="video-details">
+            <h3 id="videoTitle"></h3>
+            <p><strong>Uploader:</strong> <span id="uploader"></span></p>
+            <p><strong>Maximum Quality:</strong> <span id="maxQuality" class="highlight"></span></p>
+            <p><strong>Resolution:</strong> <span id="resolution"></span></p>
+            <p><strong>Duration:</strong> <span id="duration"></span></p>
+            <p><strong>Upload Date:</strong> <span id="uploadDate"></span></p>
+            <p><strong>View Count:</strong> <span id="viewCount"></span></p>
+          </div>
+        </div>
+      </div>
+    </main>
+    
+    <footer>
+      <p>This tool uses yt-dlp to extract information from YouTube videos</p>
+      <p>Note: Make sure yt-dlp is installed on your server</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html> 
