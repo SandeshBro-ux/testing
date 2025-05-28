@@ -44,19 +44,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       
       if (!data.success) {
-        showError(data.message || 'Failed to get video information');
+        const errorMessage = translateErrorMessage(data.error || data.message || 'Failed to get video information');
+        showError(errorMessage);
         return;
       }
       
       displayVideoInfo(data.data);
     } catch (error) {
       console.error('Error:', error);
-      showError('An error occurred while fetching video information');
+      showError('An error occurred connecting to the server. Please try again later.');
     } finally {
       loader.style.display = 'none';
       submitBtn.disabled = false;
     }
   });
+  
+  // Function to translate technical error messages to user-friendly messages
+  function translateErrorMessage(errorMessage) {
+    if (errorMessage.includes('yt-dlp is not installed') || 
+        errorMessage.includes('Failed to get video info with ytdl-core')) {
+      return 'Our server is having trouble processing YouTube videos at the moment. Please try again later.';
+    }
+    
+    if (errorMessage.includes('video unavailable') || 
+        errorMessage.includes('private video') ||
+        errorMessage.includes('This video is unavailable') ||
+        errorMessage.includes('Status code: 410')) {
+      return 'This video appears to be private, deleted, or otherwise unavailable (it may have been removed).';
+    }
+    
+    if (errorMessage.includes('age-restricted')) {
+      return 'This video is age-restricted and cannot be processed.';
+    }
+    
+    if (errorMessage.includes('Invalid YouTube URL')) {
+      return 'Please enter a valid YouTube URL.';
+    }
+    
+    // Generic error message for any other errors
+    return 'Unable to process this video. Please try again with a different video.';
+  }
   
   function showError(message) {
     loader.style.display = 'none';

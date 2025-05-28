@@ -80,31 +80,35 @@ app.get('/debug', (req, res) => {
 
 // API to get YouTube video info
 app.post('/api/video-info', async (req, res) => {
+  // Declare urlToProcess here to make it available in the catch block
+  let urlToProcess = 'URL_NOT_CAPTURED'; 
   try {
     const { url } = req.body;
-    logMessage(`Received request for URL: ${url}`);
+    urlToProcess = url; // Assign the actual URL
+
+    logMessage(`Received request for URL: ${urlToProcess}`);
     
-    if (!url || !isYouTubeUrl(url)) {
-      logMessage(`Invalid YouTube URL: ${url}`, true);
+    if (!urlToProcess || !isYouTubeUrl(urlToProcess)) {
+      logMessage(`Invalid YouTube URL: ${urlToProcess}`, true);
       return res.status(400).json({ 
         success: false, 
         message: 'Invalid YouTube URL' 
       });
     }
 
-    const videoInfo = await getVideoInfo(url);
-    logMessage(`Successfully retrieved info for URL: ${url}`);
+    const videoInfo = await getVideoInfo(urlToProcess);
+    logMessage(`Successfully retrieved info for URL: ${urlToProcess}`);
     res.json({ 
       success: true, 
       data: videoInfo 
     });
   } catch (error) {
-    logMessage(`Error processing request for ${url}: ${error.message}`, true);
-    console.error(`Error stack for ${url}:`, error.stack);
+    logMessage(`Error processing request for ${urlToProcess}: ${error.message}`, true);
+    console.error(`Error stack for ${urlToProcess}:`, error.stack);
     res.status(500).json({ 
       success: false, 
       message: 'Error getting video information',
-      error: error.message // Send the actual error message for debugging on client side if needed
+      error: error.message
     });
   }
 });
