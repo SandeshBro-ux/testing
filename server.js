@@ -1,9 +1,8 @@
 const express = require('express');
-const { exec } = require('child_process');
-const util = require('util');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const youtubedl = require('youtube-dl-exec');
 
 // Create logs directory if it doesn't exist
 const logsDir = path.join(__dirname, 'logs');
@@ -20,29 +19,17 @@ function logMessage(message, isError = false) {
   const logEntry = `[${timestamp}] ${isError ? 'ERROR' : 'INFO'}: ${message}\n`;
   logStream.write(logEntry);
   if (isError) {
-    console.error(logEntry);
+    console.error(logEntry.trim()); // Trim for cleaner console error output
   } else {
-    console.log(logEntry);
+    console.log(logEntry.trim());
   }
 }
 
 const app = express();
-const execPromise = util.promisify(exec);
 const PORT = process.env.PORT || 3000;
 
-// More robust environment detection - assume we're on a cloud platform if:
-// 1. RENDER environment variable is set to 'true'
-// 2. NODE_ENV is 'production'
-// 3. We're running on a non-standard port like Render uses (Render dynamically assigns PORT)
-// 4. The path includes '/opt/render/' which is common on Render
-const isCloudPlatform = 
-  process.env.RENDER === 'true' || 
-  process.env.NODE_ENV === 'production' ||
-  (process.env.PORT && process.env.PORT !== '3000') || // Check if PORT is set and not the default local one
-  __dirname.includes('/opt/render/');
-
-logMessage(`Initial environment detection: RENDER=${process.env.RENDER}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, __dirname=${__dirname}`);
-logMessage(`Running in ${isCloudPlatform ? 'cloud/production' : 'local'} environment based on checks.`);
+logMessage(`Server process started. Node version: ${process.version}. Platform: ${process.platform}.`);
+logMessage(`Initial environment: RENDER=${process.env.RENDER}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, __dirname=${__dirname}`);
 
 // Middlewares
 app.use(cors());
@@ -55,11 +42,18 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Debug endpoint
-app.get('/debug', (req, res) => {
+app.get('/debug', async (req, res) => {
+  let ytdlexecBinaryStatus = 'Not checked / N/A';
+  try {
+    const versionOutput = await youtubedl.raw('--version');
+    ytdlexecBinaryStatus = `Operational (yt-dlp version: ${versionOutput.stdout.trim()})`;
+    logMessage(`Debug: yt-dlp binary check successful: ${ytdlexecBinaryStatus}`);
+  } catch (e) {
+    ytdlexecBinaryStatus = `Error checking yt-dlp binary: ${e.message}`;
+    logMessage(`Debug: yt-dlp binary check failed: ${e.message}`, true);
+  }
+
   const debugInfo = {
-    detectedEnvironment: isCloudPlatform ? 'cloud/production' : 'local',
-    isCloudPlatform: isCloudPlatform,
     nodeVersion: process.version,
     platform: process.platform,
     memoryUsage: process.memoryUsage(),
@@ -71,44 +65,35 @@ app.get('/debug', (req, res) => {
       NODE_ENV: process.env.NODE_ENV,
       PORT: process.env.PORT
     },
-    directoryListingRoot: fs.existsSync('/opt/render/project/src/') ? fs.readdirSync('/opt/render/project/src/') : 'Path /opt/render/project/src/ not found',
-    directoryListingCurrent: fs.readdirSync(__dirname)
+    youtubeDlExecStatus: ytdlexecBinaryStatus,
+    directoryListingCurrent: fs.readdirSync(__dirname) // Basic check
   };
-  
   res.json(debugInfo);
 });
 
-// API to get YouTube video info
 app.post('/api/video-info', async (req, res) => {
-  // Declare urlToProcess here to make it available in the catch block
-  let urlToProcess = 'URL_NOT_CAPTURED'; 
+  let urlToProcess = 'URL_NOT_CAPTURED';
   try {
     const { url } = req.body;
-    urlToProcess = url; // Assign the actual URL
-
+    urlToProcess = url;
     logMessage(`Received request for URL: ${urlToProcess}`);
-    
+
     if (!urlToProcess || !isYouTubeUrl(urlToProcess)) {
       logMessage(`Invalid YouTube URL: ${urlToProcess}`, true);
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Invalid YouTube URL' 
-      });
+      return res.status(400).json({ success: false, message: 'Invalid YouTube URL' });
     }
 
     const videoInfo = await getVideoInfo(urlToProcess);
-    logMessage(`Successfully retrieved info for URL: ${urlToProcess}`);
-    res.json({ 
-      success: true, 
-      data: videoInfo 
-    });
+    logMessage(`Successfully retrieved info using youtube-dl-exec for URL: ${urlToProcess}`);
+    res.json({ success: true, data: videoInfo });
+
   } catch (error) {
     logMessage(`Error processing request for ${urlToProcess}: ${error.message}`, true);
-    console.error(`Error stack for ${urlToProcess}:`, error.stack);
+    console.error(`Underlying error stack for ${urlToProcess} (if any):`, error.stack); 
     res.status(500).json({ 
       success: false, 
-      message: 'Error getting video information',
-      error: error.message
+      message: 'Error getting video information', 
+      error: error.message // Pass the processed error message
     });
   }
 });
@@ -119,83 +104,28 @@ function isYouTubeUrl(url) {
   return pattern.test(url);
 }
 
-// Function to extract video ID from URL
-function extractVideoId(url) {
-  const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[7].length === 11) ? match[7] : null;
-}
-
-// Function to get video info using ytdl-core (JavaScript library)
-async function getVideoInfoWithYtdlCore(url) {
-  logMessage(`Using ytdl-core for video info: ${url}`);
+// Function to get video info using youtube-dl-exec
+async function getVideoInfo(url) {
+  logMessage(`Attempting to get video info using youtube-dl-exec for URL: ${url}`);
   try {
-    const videoId = extractVideoId(url);
-    if (!videoId) {
-      throw new Error('Could not extract video ID from URL for ytdl-core');
-    }
-    logMessage(`Extracted video ID for ytdl-core: ${videoId}`);
-    
-    const ytdl = require('ytdl-core'); // Standard require
-    const info = await ytdl.getInfo(videoId);
-    logMessage(`Successfully fetched video info with ytdl-core for ID: ${videoId}`);
-    
-    const formats = info.formats;
-    let maxHeight = 0;
-    let maxQualityLabel = '';
-    let maxFormat = null;
-    
-    formats.forEach(format => {
-      const height = parseInt(format.height);
-      if (height && height > maxHeight) {
-        maxHeight = height;
-        maxQualityLabel = format.qualityLabel || `${height}p`;
-        maxFormat = format;
-      }
+    const videoData = await youtubedl(url, {
+      dumpJson: true,
+      // Add any specific yt-dlp flags if needed, e.g.:
+      // noCheckCertificates: true, // For potential SSL issues
+      // formatSort: 'height' // If you want server to sort by height, though client-side processing is fine
     });
-    
-    return {
-      title: info.videoDetails.title,
-      uploader: info.videoDetails.author.name,
-      thumbnail: info.videoDetails.thumbnails[info.videoDetails.thumbnails.length - 1].url,
-      duration: parseInt(info.videoDetails.lengthSeconds),
-      uploadDate: info.videoDetails.publishDate ? 
-        info.videoDetails.publishDate.replace(/-/g, '') : 
-        null,
-      viewCount: parseInt(info.videoDetails.viewCount),
-      maxQuality: maxQualityLabel,
-      maxHeight,
-      maxFormat: maxFormat ? {
-        formatId: maxFormat.itag,
-        container: maxFormat.container,
-        resolution: maxFormat.width && maxFormat.height ? 
-          `${maxFormat.width}x${maxFormat.height}` : 
-          'unknown',
-        fps: maxFormat.fps
-      } : null
-    };
-  } catch (error) {
-    logMessage(`Error using ytdl-core for ${url}: ${error.message}`, true);
-    throw new Error(`Failed to get video info with ytdl-core for ${url}: ${error.message}`);
-  }
-}
 
-// Function to get video info using yt-dlp (command-line tool) - FOR LOCAL USE ONLY
-async function getVideoInfoWithYtDlp(url) {
-  logMessage(`Attempting to use yt-dlp for video info (local only): ${url}`);
-  try {
-    await execPromise('yt-dlp --version'); // Check if yt-dlp exists and is executable
-    logMessage('yt-dlp found and accessible locally.');
-    
-    const { stdout } = await execPromise(`yt-dlp --dump-json "${url}"`);
-    const videoInfo = JSON.parse(stdout);
-    logMessage(`Successfully fetched video info with yt-dlp for ${url}`);
-    
-    const formats = videoInfo.formats || [];
+    if (!videoData) {
+      logMessage(`youtube-dl-exec returned no data for ${url}`, true);
+      throw new Error('No data returned from video processing service.');
+    }
+    logMessage(`Successfully fetched raw data with youtube-dl-exec for URL: ${url}`);
+
+    const formats = videoData.formats || [];
     let maxHeight = 0;
     let maxQualityLabel = '';
     let maxFormat = null;
-    
+
     formats.forEach(format => {
       if (format.height && format.height > maxHeight) {
         maxHeight = format.height;
@@ -204,52 +134,70 @@ async function getVideoInfoWithYtDlp(url) {
       }
     });
     
+    // Fallback if maxHeight is still 0 but formats exist (e.g. only audio or non-standard res)
+    if (maxHeight === 0 && formats.length > 0) {
+        logMessage(`No direct video height found for ${url}, attempting to parse resolution string.`);
+        formats.forEach(format => {
+            if (format.resolution && typeof format.resolution === 'string') {
+                const resParts = format.resolution.split('x');
+                if (resParts.length === 2) {
+                    const h = parseInt(resParts[1]);
+                    if (!isNaN(h) && h > maxHeight) {
+                        maxHeight = h;
+                        maxQualityLabel = format.format_note || `${h}p`;
+                        maxFormat = format; 
+                    }
+                }
+            }
+        });
+    }
+    if (maxHeight === 0) {
+        logMessage(`Could not determine maximum video resolution for ${url}. Available formats might be audio-only or have unparsable resolutions.`);
+    }
+
     return {
-      title: videoInfo.title,
-      uploader: videoInfo.uploader || videoInfo.channel,
-      thumbnail: videoInfo.thumbnail,
-      duration: videoInfo.duration,
-      uploadDate: videoInfo.upload_date,
-      viewCount: videoInfo.view_count,
-      maxQuality: maxQualityLabel,
-      maxHeight,
+      title: videoData.title || 'N/A',
+      uploader: videoData.uploader || videoData.channel || 'N/A',
+      thumbnail: videoData.thumbnail || '',
+      duration: videoData.duration || 0,
+      uploadDate: videoData.upload_date || null,
+      viewCount: videoData.view_count || 0,
+      maxQuality: maxQualityLabel || (maxHeight > 0 ? `${maxHeight}p` : 'N/A'),
+      maxHeight: maxHeight || 0,
       maxFormat: maxFormat ? {
         formatId: maxFormat.format_id,
         container: maxFormat.ext,
-        resolution: `${maxFormat.width}x${maxFormat.height}`,
-        fps: maxFormat.fps
+        resolution: maxFormat.resolution || (maxFormat.width && maxFormat.height ? `${maxFormat.width}x${maxFormat.height}` : 'N/A'),
+        fps: maxFormat.fps || null
       } : null
     };
-  } catch (error) {
-    logMessage(`Error using yt-dlp for ${url} (local attempt): ${error.message}`, true);
-    throw new Error(`yt-dlp failed for ${url} (local attempt): ${error.message}`); // More specific error for local fallback
-  }
-}
 
-// Main function to get video info with fallbacks
-async function getVideoInfo(url) {
-  logMessage(`Determining method for URL: ${url}. isCloudPlatform: ${isCloudPlatform}`);
-  
-  if (isCloudPlatform) {
-    logMessage(`Cloud platform detected. Using ytdl-core directly for ${url}.`);
-    return await getVideoInfoWithYtdlCore(url);
+  } catch (error) {
+    // youtube-dl-exec errors often include stderr from the binary
+    const stderr = error.stderr || 'N/A';
+    logMessage(`Error using youtube-dl-exec for ${url}: ${error.message}. Stderr: ${stderr}`, true);
+    
+    let detailedErrorMessage = `Failed to process video with youtube-dl-exec.`;
+    if (stderr.includes("Unsupported URL")) {
+        detailedErrorMessage = "The provided URL is not supported or is invalid.";
+    } else if (stderr.includes("Video unavailable") || stderr.includes("Private video") || stderr.includes("This video is unavailable")) {
+        detailedErrorMessage = "This video is unavailable (private, deleted, or restricted by YouTube).";
+    } else if (stderr.includes("age restricted")) {
+        detailedErrorMessage = "This video is age-restricted and cannot be processed.";
+    } else if (stderr.includes("ERROR 410") || stderr.includes("HTTP Error 410")) {
+        detailedErrorMessage = "This video is no longer available (Error 410: Gone). It may have been permanently deleted.";
+    } else if (stderr !== 'N/A' && stderr.trim() !== '') {
+        detailedErrorMessage += ` Technical details: ${stderr.split(/[\r\n]+/)[0].substring(0, 200)}`; // First line, capped length
+    } else {
+        detailedErrorMessage += ` Details: ${error.message.substring(0,200)}`;
+    }
+    throw new Error(detailedErrorMessage);
   }
-  
-  // On local environment, try yt-dlp first, then fall back to ytdl-core
-  logMessage(`Local environment detected. Attempting yt-dlp for ${url}.`);
-  try {
-    return await getVideoInfoWithYtDlp(url);
-  } catch (ytdlpError) {
-    logMessage(`yt-dlp failed locally for ${url}: ${ytdlpError.message}. Falling back to ytdl-core.`);
-    return await getVideoInfoWithYtdlCore(url); // Fallback to ytdl-core on local if yt-dlp fails
-  }
-  // Note: The catch block for getVideoInfoWithYtdlCore will handle its own errors.
-  // If both methods fail, the error from the last attempted method will propagate up.
 }
 
 // Start server
 app.listen(PORT, () => {
   logMessage(`Server running on port ${PORT}`);
-  logMessage(`Open http://localhost:${PORT} in your browser (if running locally)`);
+  logMessage(`Access the app at http://localhost:${PORT} (if running locally)`);
   logMessage(`Application logs are being written to: ${path.join(logsDir, 'app.log')}`);
 }); 
