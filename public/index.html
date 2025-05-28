@@ -3,66 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Video Info Extractor</title>
+  <title>YouTube Max Quality Checker</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>YouTube Video Info Extractor</h1>
-      <p>Enter a YouTube URL to get information about the video, including the maximum available quality.</p>
+      <h1>YouTube Max Quality Checker</h1>
+      <p>Enter a YouTube URL to see the maximum available playback quality.</p>
     </header>
-    
+
     <main>
       <div class="input-section">
         <form id="videoForm">
           <div class="form-group">
             <label for="videoUrl">YouTube Video URL:</label>
-            <input 
-              type="text" 
-              id="videoUrl" 
-              name="videoUrl" 
-              placeholder="https://youtu.be/POGIkh_aLDg" 
-              required
-            >
+            <input type="text" id="videoUrl" name="videoUrl" placeholder="https://youtu.be/VIDEO_ID" required>
           </div>
-          <button type="submit" id="submitBtn">Get Video Info</button>
+          <button type="submit" id="submitBtn">Check Quality</button>
         </form>
       </div>
-      
+
       <div class="loader" id="loader">
         <div class="spinner"></div>
-        <p>Fetching video information...</p>
+        <p>Checking quality...</p>
       </div>
-      
+
       <div class="results" id="results">
-        <h2>Video Information</h2>
-        <div id="errorMsg" class="error-message"></div>
-        
-        <div class="video-info-container">
-          <div class="video-thumbnail">
-            <img id="thumbnail" src="" alt="Video thumbnail">
-          </div>
-          
-          <div class="video-details">
-            <h3 id="videoTitle"></h3>
-            <p><strong>Uploader:</strong> <span id="uploader"></span></p>
-            <p><strong>Maximum Quality:</strong> <span id="maxQuality" class="highlight"></span></p>
-            <p><strong>Resolution:</strong> <span id="resolution"></span></p>
-            <p><strong>Duration:</strong> <span id="duration"></span></p>
-            <p><strong>Upload Date:</strong> <span id="uploadDate"></span></p>
-            <p><strong>View Count:</strong> <span id="viewCount"></span></p>
-          </div>
-        </div>
+        <h2>Maximum Quality</h2>
+        <p id="maxQuality" class="highlight"></p>
       </div>
     </main>
-    
+
     <footer>
-      <p>This tool uses yt-dlp to extract information from YouTube videos</p>
-      <p>Note: Make sure yt-dlp is installed on your server</p>
+      <p>Powered by YouTube IFrame API (no server scraping)</p>
     </footer>
   </div>
 
+  <div id="player" style="display:none;"></div>
+
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>
 </body>
 </html> 
