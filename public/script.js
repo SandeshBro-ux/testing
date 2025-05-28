@@ -61,20 +61,25 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Function to translate technical error messages to user-friendly messages
   function translateErrorMessage(errorMessage) {
-    if (errorMessage.includes('yt-dlp is not installed') || 
-        errorMessage.includes('Failed to get video info with ytdl-core')) {
-      return 'Our server is having trouble processing YouTube videos at the moment. Please try again later.';
+    // Check for specific error codes or messages first
+    if (errorMessage.includes('Status code: 410')) {
+      return 'This video appears to be private, deleted, or otherwise unavailable (it may have been removed).';
     }
     
     if (errorMessage.includes('video unavailable') || 
         errorMessage.includes('private video') ||
-        errorMessage.includes('This video is unavailable') ||
-        errorMessage.includes('Status code: 410')) {
-      return 'This video appears to be private, deleted, or otherwise unavailable (it may have been removed).';
+        errorMessage.includes('This video is unavailable')) {
+      return 'This video appears to be private, deleted, or otherwise unavailable.';
     }
     
     if (errorMessage.includes('age-restricted')) {
       return 'This video is age-restricted and cannot be processed.';
+    }
+    
+    // Then check for broader failure messages
+    if (errorMessage.includes('yt-dlp is not installed') || 
+        errorMessage.includes('Failed to get video info with ytdl-core')) {
+      return 'Our server is having trouble processing YouTube videos at the moment. Please try again later.';
     }
     
     if (errorMessage.includes('Invalid YouTube URL')) {
