@@ -88,6 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("CRITICAL: loader element is null!");
     }
 
+    // Hide "How It Works" section when processing a video request
+    const howItWorksSection = document.querySelector('.how-it-works');
+    if (howItWorksSection) {
+        howItWorksSection.style.display = 'none';
+    }
+
     if (!currentVideoId) {
       if (loader) loader.style.display = 'none';
       const msg = 'Invalid YouTube URL. Please enter a valid link (e.g., https://www.youtube.com/watch?v=VIDEO_ID).';
@@ -96,6 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
         errorDisplayElement.style.display = 'block';
       }
       if (resultsEl) resultsEl.style.display = 'block'; // Show results container to display this error
+      
+      // Show "How It Works" section again if there's an error
+      if (howItWorksSection) {
+          howItWorksSection.style.display = 'block';
+      }
+      
       showNotification(msg, 'error');
       return;
     }
@@ -131,6 +143,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("YOUTUBE API KEY ISSUE: " + error.message);
       } else if (error.message.includes('not found') || error.message.includes('private') || error.message.includes('unavailable') || error.message.includes('deleted')) {
         userErrorMessage = 'Video not found, or it is private/deleted, or the URL is incorrect.';
+        
+        // Only show "How It Works" again if it's a video not found error
+        const howItWorksSection = document.querySelector('.how-it-works');
+        if (howItWorksSection) {
+            howItWorksSection.style.display = 'block';
+        }
       }
 
       if (errorDisplayElement) {
