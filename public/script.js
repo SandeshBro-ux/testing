@@ -1,5 +1,6 @@
 let player;
 const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
+let currentVideoId = '';
 
 // This function is called by the YouTube IFrame API script
 function onYouTubeIframeAPIReady() {
@@ -13,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const results = document.getElementById('results');
   const maxQualityEl = document.getElementById('maxQuality');
   const videoDetailsEl = document.getElementById('videoDetails');
+  const downloadMP4Button = document.getElementById('downloadMP4');
+  const downloadMP3Button = document.getElementById('downloadMP3');
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -22,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showResult('Invalid YouTube URL');
       return;
     }
+    currentVideoId = videoId;
     loader.style.display = 'block';
     results.style.display = 'none';
     videoDetailsEl.style.display = 'none';
@@ -49,6 +53,48 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
   });
+
+  // Event listeners for download buttons
+  downloadMP4Button.addEventListener('click', () => {
+    if (currentVideoId) {
+      initiateDownload(currentVideoId, 'mp4');
+    }
+  });
+
+  downloadMP3Button.addEventListener('click', () => {
+    if (currentVideoId) {
+      initiateDownload(currentVideoId, 'mp3');
+    }
+  });
+
+  function initiateDownload(videoId, format) {
+    // We'll create a server endpoint for this to handle the download
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const downloadUrl = `/download?url=${encodeURIComponent(videoUrl)}&format=${format}`;
+    
+    // Show a notification to the user
+    showNotification(`Preparing ${format.toUpperCase()} download...`);
+    
+    // Redirect to download URL or open in new tab
+    window.open(downloadUrl, '_blank');
+  }
+
+  function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+      notification.classList.add('show');
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+    }, 10);
+  }
 
   function onPlayerReady(event) {
     console.log("Player is ready. Waiting for state change to get quality.");

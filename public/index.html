@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Quality Inspector</title>
+  <title>YouTube Video Downloader</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 </head>
@@ -13,8 +13,8 @@
       <div class="youtube-brand">
         <img src="https://logos-world.net/wp-content/uploads/2020/04/YouTube-Logo.png" alt="YouTube" class="youtube-logo">
       </div>
-      <h1>YouTube Quality Inspector</h1>
-      <p>Enter a YouTube URL to check video quality and details</p>
+      <h1>YouTube Video Downloader</h1>
+      <p>Enter a YouTube URL to download videos and check details</p>
     </header>
 
     <main>
@@ -24,20 +24,35 @@
             <label for="videoUrl">YouTube Video URL:</label>
             <input type="text" id="videoUrl" name="videoUrl" placeholder="https://youtu.be/VIDEO_ID" required>
           </div>
-          <button type="submit" id="submitBtn">Check Quality</button>
+          <button type="submit" id="submitBtn">Get Video</button>
         </form>
       </div>
 
       <div class="loader" id="loader">
         <div class="spinner"></div>
-        <p>Checking quality...</p>
+        <p>Processing video...</p>
       </div>
 
       <div class="results" id="results">
         <div id="videoDetails" style="display:none;">
           <h2>Video Information</h2>
-          <div class="quality-info">
-            <p class="quality-text">The best quality for the video is <span id="maxQuality" class="quality-badge"></span></p>
+          <div class="download-section">
+            <h3>Download Options</h3>
+            <div class="download-buttons">
+              <button id="downloadMP4" class="download-btn">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
+                </svg>
+                Download MP4
+              </button>
+              <button id="downloadMP3" class="download-btn audio-btn">
+                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path>
+                </svg>
+                Download Audio
+              </button>
+            </div>
+            <p class="quality-text">Maximum available quality: <span id="maxQuality" class="quality-badge"></span></p>
           </div>
 
           <div class="video-info">
@@ -90,12 +105,14 @@
             </h4>
             <p id="description"></p>
           </div>
+          <div class="disclaimer">
+            <p>Note: This tool is for educational purposes only. Please respect copyright laws and YouTube's Terms of Service.</p>
+          </div>
         </div>
       </div>
     </main>
 
     <footer>
-      <p>© 2023 YouTube Quality Inspector</p>
     </footer>
   </div>
 

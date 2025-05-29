@@ -98,6 +98,44 @@ app.post('/api/video-info', async (req, res) => {
   }
 });
 
+app.get('/download', async (req, res) => {
+  const { url, format } = req.query;
+  
+  if (!url) {
+    return res.status(400).send('URL parameter is required');
+  }
+  
+  try {
+    // Here you would use a library like ytdl-core or youtube-dl-exec
+    // to handle the actual download
+    // For demonstration, we'll just redirect to a mock download
+    
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      return res.status(400).send('Invalid YouTube URL');
+    }
+    
+    // In a real implementation, you would download the video server-side
+    // and then serve it to the client
+    
+    res.setHeader('Content-Disposition', `attachment; filename="youtube-${videoId}.${format}"`);
+    res.setHeader('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
+    
+    // For demo purposes, redirect to YouTube
+    res.redirect(`https://www.youtube.com/watch?v=${videoId}`);
+    
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).send('Error processing download request');
+  }
+});
+
+function extractVideoId(url) {
+  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+  const match = url.match(regex);
+  return match ? match[1] : null;
+}
+
 // Function to validate YouTube URL
 function isYouTubeUrl(url) {
   const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;

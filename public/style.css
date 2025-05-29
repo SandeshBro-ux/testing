@@ -8,6 +8,8 @@
   --border-color: #333333;
   --highlight-color: #2196F3;
   --accent-color: #ff4545;
+  --download-color: #4CAF50;
+  --audio-color: #9C27B0;
 }
 
 * {
@@ -165,16 +167,73 @@ button:hover {
   text-align: center;
 }
 
-/* Quality info section */
-.quality-info {
+/* Download section */
+.download-section {
   text-align: center;
   margin-bottom: 25px;
+  padding: 15px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.download-section h3 {
+  margin-bottom: 15px;
+  color: var(--text-color);
 }
 
 .quality-text {
   font-size: 18px;
   color: var(--text-color);
-  margin-bottom: 10px;
+  margin-top: 15px;
+}
+
+.download-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--download-color);
+  color: white;
+  border-radius: 4px;
+  padding: 12px 20px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.audio-btn {
+  background-color: var(--audio-color);
+}
+
+.download-btn .icon {
+  margin-right: 8px;
+  width: 20px;
+  height: 20px;
+}
+
+.disclaimer {
+  margin-top: 30px;
+  padding: 15px;
+  background-color: rgba(255, 69, 69, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 69, 69, 0.3);
+  text-align: center;
+  font-size: 14px;
+  color: #ff9999;
 }
 
 /* Video details section */
@@ -348,5 +407,35 @@ footer {
   
   button {
     width: 100%;
+  }
+}
+
+/* Notification */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: var(--highlight-color);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(100px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 1000;
+  font-weight: 500;
+}
+
+.notification.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .notification {
+    left: 20px;
+    right: 20px;
+    text-align: center;
   }
 } 
