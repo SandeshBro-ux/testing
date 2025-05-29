@@ -1,0 +1,2 @@
+# This file is required for Render but we're using Node.js, not Python
+# Left intentionally empty as we're using package.json for dependencies 
