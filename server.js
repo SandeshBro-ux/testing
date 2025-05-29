@@ -32,6 +32,15 @@ const PORT = process.env.PORT || 3000;
 logMessage(`Server process started. Node version: ${process.version}. Platform: ${process.platform}.`);
 logMessage(`Initial environment: RENDER=${process.env.RENDER}, NODE_ENV=${process.env.NODE_ENV}, PORT=${process.env.PORT}, __dirname=${__dirname}`);
 
+// Set up custom binary path for yt-dlp in the youtubedl config
+const binPath = path.join(__dirname, 'node_modules', 'youtube-dl-exec', 'bin', process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
+if (fs.existsSync(binPath)) {
+  logMessage(`Found yt-dlp binary at ${binPath}`);
+  youtubedl.setBinaryPath?.(binPath);
+} else {
+  logMessage(`Warning: yt-dlp binary not found at ${binPath}, using system path`);
+}
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
@@ -100,17 +109,15 @@ app.post('/api/video-info', async (req, res) => {
 });
 
 app.get('/download', async (req, res) => {
-  const { url, format } = req.query;
-  
-  if (!url) {
-    return res.status(400).send('URL parameter is required');
-  }
-  
   try {
-    // Here you would use a library like ytdl-core or youtube-dl-exec
-    // to handle the actual download
-    // For demonstration, we'll just redirect to a mock download
+    const { url, format } = req.query;
     
+    if (!url) {
+      return res.status(400).json({ error: 'URL parameter is required' });
+    }
+    
+    // Clean the URL if it starts with @
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
     const videoId = extractVideoId(url);
     if (!videoId) {
       return res.status(400).send('Invalid YouTube URL');
@@ -132,25 +139,32 @@ app.get('/download', async (req, res) => {
 });
 
 function extractVideoId(url) {
-  const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
-  const match = url.match(regex);
+  // Remove any @ symbol at the beginning if present
+  const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+  const pattern = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
+  const match = cleanUrl.match(pattern);
   return match ? match[1] : null;
 }
 
 // Function to validate YouTube URL
 function isYouTubeUrl(url) {
-  const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
-  return pattern.test(url);
+  // Remove any @ symbol at the beginning if present
+  const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+  const pattern = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
+  return pattern.test(cleanUrl);
 }
 
 // Function to get video info using youtube-dl-exec
 async function getVideoInfo(url) {
   logMessage(`Attempting to get video info using youtube-dl-exec for URL: ${url}`);
   try {
-    const videoData = await youtubedl(url, {
+    // Clean the URL if it starts with @
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+    const videoData = await youtubedl(cleanUrl, {
       dumpJson: true,
       noCheckCertificate: true,
-      forceIpv4: true
+      forceIpv4: true,
+      binPath: binPath // Use our custom binary path
     });
 
     if (!videoData) {

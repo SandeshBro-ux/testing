@@ -320,14 +320,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractVideoId(url) {
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
-    const match = url.match(regex);
+    // Remove any @ symbol at the beginning if present
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|short\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+    const match = cleanUrl.match(regex);
     return match ? match[1] : null;
   }
 
   // Function to check if the URL is a YouTube Shorts URL
   function isYouTubeShortUrl(url) {
-    return url.includes('youtube.com/shorts/') || url.includes('youtube.com/short/');
+    // Remove any @ symbol at the beginning if present
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+    return cleanUrl.includes('youtube.com/shorts/') || cleanUrl.includes('youtube.com/short/');
   }
 
   // Add animated placeholder to the input field
@@ -504,7 +508,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check if the URL is a valid YouTube URL
   function isValidYoutubeUrl(url) {
+    // Remove any @ symbol at the beginning if present
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
     const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|short\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
-    return youtubeRegex.test(url);
+    return youtubeRegex.test(cleanUrl);
   }
 }); 
