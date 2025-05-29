@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Max Quality Checker</title>
+  <title>YouTube Quality Inspector</title>
   <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>YouTube Max Quality Checker</h1>
-      <p>Enter a YouTube URL to see the maximum available playback quality.</p>
+      <h1>YouTube Quality Inspector</h1>
+      <p>Enter a YouTube URL to check video quality and details</p>
     </header>
 
     <main>
@@ -30,18 +31,22 @@
       </div>
 
       <div class="results" id="results">
-        <h2>Maximum Quality</h2>
-        <p id="maxQuality" class="highlight"></p>
+        <h2>Video Information</h2>
+        <div>
+          <span id="maxQuality" class="quality-badge"></span>
+        </div>
         
         <div id="videoDetails" style="display:none;">
-          <h2>Video Details</h2>
           <div class="video-info">
             <div class="thumbnail-container">
               <img id="thumbnail" src="" alt="Video Thumbnail">
             </div>
             <div class="details">
               <h3 id="videoTitle"></h3>
-              <p>Channel: <span id="channelName"></span></p>
+              <div class="channel-info">
+                <img id="channelLogo" class="channel-logo" src="" alt="Channel Logo">
+                <p>Channel: <span id="channelName"></span></p>
+              </div>
               <p>Views: <span id="viewCount"></span></p>
               <p>Likes: <span id="likeCount"></span></p>
               <p>Published: <span id="publishDate"></span></p>
@@ -57,7 +62,7 @@
     </main>
 
     <footer>
-      <p>Powered by YouTube IFrame API and YouTube Data API v3</p>
+      <p>Powered by YouTube IFrame API and YouTube Data API v3 | Made with ❤️</p>
     </footer>
   </div>
 

@@ -68,9 +68,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 maxQuality = levels[0];
             }
         }
-        showResult(maxQuality);
+        showResult(formatQualityLabel(maxQuality));
       }, 500);
     }
+  }
+
+  function formatQualityLabel(quality) {
+    const qualityMap = {
+      'hd2160': '4K',
+      'hd1440': '1440p',
+      'hd1080': '1080p HD',
+      'hd720': '720p HD',
+      'large': '480p',
+      'medium': '360p',
+      'small': '240p',
+      'tiny': '144p',
+      'unknown': 'Unknown'
+    };
+    
+    return qualityMap[quality] || quality;
   }
 
   function onPlayerError(event) {
@@ -94,12 +110,32 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.items && data.items.length > 0) {
           displayVideoDetails(data.items[0]);
+          fetchChannelLogo(data.items[0].snippet.channelId);
         } else {
           console.error('No video details found');
         }
       })
       .catch(error => {
         console.error('Error fetching video details:', error);
+      });
+  }
+
+  function fetchChannelLogo(channelId) {
+    fetch(`https://www.googleapis.com/youtube/v3/channels?id=${channelId}&key=${YOUTUBE_API_KEY}&part=snippet`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`API responded with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.items && data.items.length > 0) {
+          const channelLogo = data.items[0].snippet.thumbnails.default.url;
+          document.getElementById('channelLogo').src = channelLogo;
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching channel logo:', error);
       });
   }
 
@@ -127,7 +163,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function formatNumber(num) {
-    return parseInt(num).toLocaleString();
+    // Format numbers with K, M, B for thousand, million, billion
+    const n = parseInt(num);
+    if (n >= 1e9) {
+      return (n / 1e9).toFixed(1) + 'B';
+    } else if (n >= 1e6) {
+      return (n / 1e6).toFixed(1) + 'M';
+    } else if (n >= 1e3) {
+      return (n / 1e3).toFixed(1) + 'K';
+    }
+    return n.toLocaleString();
   }
 
   function formatDate(isoString) {
