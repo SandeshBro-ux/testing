@@ -194,21 +194,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!notification) return;
 
     notification.className = 'notification';
-    let iconClass = 'fas fa-check-circle';
     let bgColor = 'var(--download-color)';
 
     switch(type) {
       case 'error':
-        iconClass = 'fas fa-exclamation-circle';
         bgColor = 'var(--primary-color)';
         break;
       case 'info':
-        iconClass = 'fas fa-info-circle';
         bgColor = 'var(--highlight-color)';
         break;
     }
     notification.style.backgroundColor = bgColor;
-    notification.innerHTML = `<i class="${iconClass}"></i> ${message}`;
+    notification.textContent = message;
     notification.classList.add('show');
     setTimeout(() => notification.classList.remove('show'), duration);
   }

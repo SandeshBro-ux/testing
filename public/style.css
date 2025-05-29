@@ -735,6 +735,7 @@ button:hover {
   background-color: var(--highlight-color);
   color: white;
   padding: 15px 20px;
+  padding-left: 45px;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
   transform: translateY(100px);
@@ -742,15 +743,28 @@ button:hover {
   transition: transform 0.3s ease, opacity 0.3s ease;
   z-index: 1000;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  position: relative;
 }
 
+/* Default icon (check/success) */
 .notification::before {
-  content: '\f058';
+  content: '\f00c';
   font-family: 'Font Awesome 6 Free';
   font-weight: 900;
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Error icon */
+.notification[style*="--primary-color"]::before {
+  content: '\f06a';
+}
+
+/* Info icon */
+.notification[style*="--highlight-color"]::before {
+  content: '\f129';
 }
 
 .notification.show {
