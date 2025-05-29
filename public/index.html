@@ -32,11 +32,32 @@
       <div class="results" id="results">
         <h2>Maximum Quality</h2>
         <p id="maxQuality" class="highlight"></p>
+        
+        <div id="videoDetails" style="display:none;">
+          <h2>Video Details</h2>
+          <div class="video-info">
+            <div class="thumbnail-container">
+              <img id="thumbnail" src="" alt="Video Thumbnail">
+            </div>
+            <div class="details">
+              <h3 id="videoTitle"></h3>
+              <p>Channel: <span id="channelName"></span></p>
+              <p>Views: <span id="viewCount"></span></p>
+              <p>Likes: <span id="likeCount"></span></p>
+              <p>Published: <span id="publishDate"></span></p>
+              <p>Duration: <span id="duration"></span></p>
+            </div>
+          </div>
+          <div class="description">
+            <h4>Description</h4>
+            <p id="description"></p>
+          </div>
+        </div>
       </div>
     </main>
 
     <footer>
-      <p>Powered by YouTube IFrame API (no server scraping)</p>
+      <p>Powered by YouTube IFrame API and YouTube Data API v3</p>
     </footer>
   </div>
 
