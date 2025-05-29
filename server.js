@@ -34,6 +34,10 @@ logMessage(`Initial environment: RENDER=${process.env.RENDER}, NODE_ENV=${proces
 
 // Set up custom binary path for yt-dlp in the youtubedl config
 const binPath = path.join(__dirname, 'node_modules', 'youtube-dl-exec', 'bin', process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp');
+
+// Set environment variable to indicate we're skipping yt-dlp
+process.env.SKIP_YTDLP = 'true';
+
 if (fs.existsSync(binPath)) {
   logMessage(`Found yt-dlp binary at ${binPath}`);
   youtubedl.setBinaryPath?.(binPath);
@@ -55,9 +59,14 @@ app.get('/', (req, res) => {
 app.get('/debug', async (req, res) => {
   let ytdlexecBinaryStatus = 'Not checked / N/A';
   try {
-    const versionOutput = await youtubedl.raw('--version', {stdio: ['pipe', 'pipe', 'pipe'] });
-    ytdlexecBinaryStatus = `Operational (yt-dlp version: ${versionOutput.stdout.trim()})`;
-    logMessage(`Debug: yt-dlp binary check successful: ${ytdlexecBinaryStatus}`);
+    if (process.env.SKIP_YTDLP === 'true') {
+      ytdlexecBinaryStatus = 'yt-dlp download intentionally skipped. Using mock data for demonstration.';
+      logMessage(`Debug: yt-dlp binary check skipped as SKIP_YTDLP is set.`);
+    } else {
+      const versionOutput = await youtubedl.raw('--version', {stdio: ['pipe', 'pipe', 'pipe'] });
+      ytdlexecBinaryStatus = `Operational (yt-dlp version: ${versionOutput.stdout.trim()})`;
+      logMessage(`Debug: yt-dlp binary check successful: ${ytdlexecBinaryStatus}`);
+    }
   } catch (e) {
     ytdlexecBinaryStatus = `Error checking yt-dlp binary: ${e.message} Stderr: ${e.stderr}`;
     logMessage(`Debug: yt-dlp binary check failed: ${e.message} Stderr: ${e.stderr}`, true);
@@ -123,6 +132,38 @@ app.get('/download', async (req, res) => {
       return res.status(400).send('Invalid YouTube URL');
     }
     
+    // If SKIP_YTDLP is set, just redirect to YouTube
+    if (process.env.SKIP_YTDLP === 'true') {
+      logMessage(`Download requested for video ${videoId} in format ${format}, but yt-dlp is skipped. Redirecting to YouTube.`);
+      
+      // Set a content type for a plain text message
+      res.setHeader('Content-Type', 'text/html');
+      
+      // Return a message with a link to YouTube
+      return res.send(`
+        <html>
+          <head>
+            <title>Download Notification</title>
+            <style>
+              body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #121212; color: #fff; }
+              .message { background-color: #1e1e1e; padding: 20px; border-radius: 10px; max-width: 600px; margin: 0 auto; }
+              a { color: #ff0000; text-decoration: none; }
+              a:hover { text-decoration: underline; }
+              .button { background-color: #ff0000; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-block; margin-top: 20px; }
+            </style>
+          </head>
+          <body>
+            <div class="message">
+              <h2>FreeYTZone Download Information</h2>
+              <p>The download functionality is currently in development. Proxy implementation is coming soon!</p>
+              <p>For now, you'll be redirected to the original YouTube video:</p>
+              <a href="https://www.youtube.com/watch?v=${videoId}" class="button">Go to YouTube</a>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+    
     // In a real implementation, you would download the video server-side
     // and then serve it to the client
     
@@ -157,6 +198,38 @@ function isYouTubeUrl(url) {
 // Function to get video info using youtube-dl-exec
 async function getVideoInfo(url) {
   logMessage(`Attempting to get video info using youtube-dl-exec for URL: ${url}`);
+  
+  // If SKIP_YTDLP is set, use a mock response instead of actual yt-dlp
+  if (process.env.SKIP_YTDLP === 'true') {
+    logMessage(`SKIP_YTDLP is set, returning mock video data for ${url}`);
+    
+    // Extract the video ID from the URL
+    const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+    const videoId = extractVideoId(cleanUrl);
+    
+    if (!videoId) {
+      throw new Error('Invalid YouTube URL');
+    }
+    
+    // Return mock data
+    return {
+      title: 'Demo Video Title',
+      uploader: 'Demo Channel',
+      thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+      duration: 180, // 3 minutes
+      uploadDate: '20230101',
+      viewCount: 1000000,
+      maxQuality: '1080p Full HD',
+      maxHeight: 1080,
+      maxFormat: {
+        formatId: 'demo-format',
+        container: 'mp4',
+        resolution: '1920x1080',
+        fps: 30
+      }
+    };
+  }
+  
   try {
     // Clean the URL if it starts with @
     const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
