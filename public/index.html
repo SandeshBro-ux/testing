@@ -3,120 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Video Downloader</title>
+  <title>FreeYTZone - Download & Analyze YouTube Videos</title>
   <link rel="stylesheet" href="style.css">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/000000/youtube-play.png">
+  <meta name="description" content="Free YouTube video downloader and quality inspector - Check video quality before downloading">
 </head>
 <body>
   <div class="container">
     <header>
       <div class="youtube-brand">
-        <img src="https://logos-world.net/wp-content/uploads/2020/04/YouTube-Logo.png" alt="YouTube" class="youtube-logo">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/ef/Youtube_logo.png" alt="YouTube Logo" class="youtube-logo">
       </div>
-      <h1>YouTube Video Downloader</h1>
-      <p>Enter a YouTube URL to download videos and check details</p>
+      <h1><span class="free">FREE</span><span class="yt">YT</span><span class="zone">ZONE</span></h1>
+      <p class="tagline">Your ultimate destination for YouTube video downloading and quality analysis</p>
     </header>
 
     <main>
-      <div class="input-section">
-        <form id="videoForm">
+      <section class="hero-section">
+        <div class="features-banner">
+          <div class="feature">
+            <i class="fas fa-tachometer-alt feature-icon"></i>
+            <span>Fast Analysis</span>
+          </div>
+          <div class="feature">
+            <i class="fas fa-download feature-icon"></i>
+            <span>HD Downloads</span>
+          </div>
+          <div class="feature">
+            <i class="fas fa-check-circle feature-icon"></i>
+            <span>No Ads</span>
+          </div>
+          <div class="feature">
+            <i class="fas fa-headphones feature-icon"></i>
+            <span>MP3 Extract</span>
+          </div>
+          <div class="feature">
+            <i class="fas fa-mobile-alt feature-icon"></i>
+            <span>Mobile Ready</span>
+          </div>
+        </div>
+
+        <div class="input-section">
+          <h2 class="form-title">Enter YouTube URL to Begin</h2>
           <div class="form-group">
-            <label for="videoUrl">YouTube Video URL:</label>
-            <input type="text" id="videoUrl" name="videoUrl" placeholder="https://youtu.be/VIDEO_ID" required>
+            <div class="input-with-icon">
+              <i class="fab fa-youtube input-icon"></i>
+              <input type="text" id="video-url" placeholder="Paste YouTube link here..." required>
+            </div>
           </div>
-          <button type="submit" id="submitBtn">Get Video</button>
-        </form>
-      </div>
+          <button id="check-btn" class="pulse-button"><i class="fas fa-search"></i> Analyze Video</button>
+          <p class="supported-text">Supports: youtube.com, youtu.be, and short links</p>
 
-      <div class="loader" id="loader">
+          <div class="how-it-works">
+            <h3><i class="fas fa-info-circle"></i> How It Works</h3>
+            <ul class="steps">
+              <li><i class="fas fa-paste"></i> Paste any YouTube video link</li>
+              <li><i class="fas fa-search"></i> Click "Analyze Video" to check quality</li>
+              <li><i class="fas fa-download"></i> Download video or audio in your preferred format</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <div class="loader">
         <div class="spinner"></div>
-        <p>Processing video...</p>
+        <p>Loading video information...</p>
+        <div class="loader-messages">
+          <div class="loader-msg">Analyzing available quality options...</div>
+          <div class="loader-msg">Checking video details...</div>
+          <div class="loader-msg">Almost there...</div>
+        </div>
       </div>
 
-      <div class="results" id="results">
-        <div id="videoDetails" style="display:none;">
-          <h2>Video Information</h2>
-          <div class="download-section">
-            <h3>Download Options</h3>
-            <div class="download-buttons">
-              <button id="downloadMP4" class="download-btn">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"></path>
-                </svg>
-                Download MP4
-              </button>
-              <button id="downloadMP3" class="download-btn audio-btn">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"></path>
-                </svg>
-                Download Audio
-              </button>
+      <div class="results">
+        <h2><i class="fas fa-info-circle"></i> Video Information</h2>
+        <div class="error-message" id="error"></div>
+
+        <div class="video-info">
+          <div class="thumbnail-container">
+            <img id="thumbnail" src="" alt="Video Thumbnail">
+            <div class="duration-badge" id="duration-badge"></div>
+          </div>
+          <div class="details">
+            <h3 id="title"></h3>
+
+            <div class="channel-info">
+              <div class="channel-logo-container">
+                <img id="channel-logo" class="channel-logo" src="" alt="Channel Logo">
+              </div>
+              <div class="stat-item">
+                <div class="icon">
+                  <i class="fas fa-user"></i>
+                </div>
+                <span id="channel-name" class="channel-name"></span>
+              </div>
             </div>
-            <p class="quality-text">Maximum available quality: <span id="maxQuality" class="quality-badge"></span></p>
+
+            <div class="stat-item">
+              <div class="icon">
+                <i class="fas fa-eye"></i>
+              </div>
+              <p>Views: <span id="views"></span></p>
+            </div>
+
+            <div class="stat-item">
+              <div class="icon">
+                <i class="fas fa-thumbs-up"></i>
+              </div>
+              <p>Likes: <span id="likes"></span></p>
+            </div>
+
+            <div class="stat-item">
+              <div class="icon">
+                <i class="far fa-clock"></i>
+              </div>
+              <p>Duration: <span id="duration"></span></p>
+            </div>
+
+            <div class="stat-item">
+              <div class="icon">
+                <i class="far fa-calendar-alt"></i>
+              </div>
+              <p>Published: <span id="published"></span></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="description">
+          <h4>
+            <div class="icon">
+              <i class="fas fa-align-left"></i>
+            </div>
+            Description
+          </h4>
+          <p id="description"></p>
+        </div>
+
+        <div class="download-section">
+          <h3><i class="fas fa-download"></i> Download Options</h3>
+          <div class="quality-text">
+            <span>Available Quality: <span id="quality-display" class="quality-badge"></span></span>
+          </div>
+          <div class="download-buttons">
+            <button class="download-btn" id="download-video">
+              <div class="icon">
+                <i class="fas fa-video"></i>
+              </div>
+              Download MP4
+            </button>
+            <button class="download-btn audio-btn" id="download-audio">
+              <div class="icon">
+                <i class="fas fa-music"></i>
+              </div>
+              Download MP3
+            </button>
+            <button class="download-btn subtitle-btn" id="download-subtitle">
+              <div class="icon">
+                <i class="fas fa-closed-captioning"></i>
+              </div>
+              Get Subtitles
+            </button>
           </div>
 
-          <div class="video-info">
-            <div class="thumbnail-container">
-              <img id="thumbnail" src="" alt="Video Thumbnail">
-            </div>
-            <div class="details">
-              <h3 id="videoTitle"></h3>
-              <div class="channel-info">
-                <div class="channel-logo-container">
-                  <img id="channelLogo" class="channel-logo" src="" alt="Channel Logo">
-                </div>
-                <p class="stat-item">
-                  <span class="channel-name" id="channelName"></span>
-                </p>
-              </div>
-              <p class="stat-item">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"></path>
-                </svg>
-                <span>Views: <span id="viewCount"></span></span>
-              </p>
-              <p class="stat-item">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91l-.01-.01L23 10z"></path>
-                </svg>
-                <span>Likes: <span id="likeCount"></span></span>
-              </p>
-              <p class="stat-item">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"></path>
-                </svg>
-                <span>Published: <span id="publishDate"></span></span>
-              </p>
-              <p class="stat-item">
-                <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"></path>
-                  <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"></path>
-                </svg>
-                <span>Duration: <span id="duration"></span></span>
-              </p>
-            </div>
-          </div>
-          <div class="description">
-            <h4>
-              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M14 17H4v2h10v-2zm6-8H4v2h16V9zM4 15h16v-2H4v2zM4 5v2h16V5H4z"></path>
-              </svg>
-              Description
-            </h4>
-            <p id="description"></p>
-          </div>
           <div class="disclaimer">
-            <p>Note: This tool is for educational purposes only. Please respect copyright laws and YouTube's Terms of Service.</p>
+            <p>⚠️ Please note: This tool is for educational purposes only. 
+              Only download videos that you have the right to download. 
+              By using this service, you agree to our Terms of Service.</p>
           </div>
         </div>
       </div>
     </main>
 
+    <div class="notification" id="notification"></div>
+
     <footer>
+      <div class="footer-content">
+        <div class="social-links">
+          <a href="#" class="social-icon"><i class="fab fa-facebook"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+          <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+        </div>
+        <div class="footer-links">
+          <a href="#">About Us</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+          <a href="#">Contact</a>
+          <a href="#">FAQ</a>
+        </div>
+        <p>© 2023 FreeYTZone - All rights reserved</p>
+      </div>
     </footer>
   </div>
 
-  <div id="player" style="display:none;"></div>
+  <div id="player"></div>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>

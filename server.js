@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
+const { exec } = require('child_process');
 const youtubedl = require('youtube-dl-exec');
 
 // Create logs directory if it doesn't exist

@@ -1,6 +1,6 @@
 let player;
 const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
-let currentVideoId = '';
+let currentVideoId = null;
 
 // This function is called by the YouTube IFrame API script
 function onYouTubeIframeAPIReady() {
@@ -16,7 +16,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const videoDetailsEl = document.getElementById('videoDetails');
   const downloadMP4Button = document.getElementById('downloadMP4');
   const downloadMP3Button = document.getElementById('downloadMP3');
+  const downloadSubtitleBtn = document.getElementById('download-subtitle');
+  const notificationElement = document.getElementById('notification');
 
+  // Initialize with sample video URL for demo purposes
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    urlInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+  }
+
+  // Focus input on page load
+  urlInput.focus();
+  
+  // Add event listeners
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = urlInput.value.trim();
@@ -67,33 +78,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  downloadSubtitleBtn.addEventListener('click', () => handleDownload('srt'));
+
+  // Add tooltip hover effects
+  const features = document.querySelectorAll('.feature');
+  features.forEach(feature => {
+    feature.addEventListener('mouseenter', () => {
+      feature.style.transform = 'translateY(-5px)';
+    });
+    feature.addEventListener('mouseleave', () => {
+      feature.style.transform = 'translateY(0px)';
+    });
+  });
+
+  // Add animated placeholder to the input field
+  setupAnimatedPlaceholder(urlInput);
+
   function initiateDownload(videoId, format) {
     // We'll create a server endpoint for this to handle the download
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const downloadUrl = `/download?url=${encodeURIComponent(videoUrl)}&format=${format}`;
     
     // Show a notification to the user
-    showNotification(`Preparing ${format.toUpperCase()} download...`);
+    showNotification(`Starting ${format.toUpperCase()} download...`, 'info');
     
     // Redirect to download URL or open in new tab
     window.open(downloadUrl, '_blank');
   }
 
-  function showNotification(message) {
+  function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = 'notification';
-    notification.textContent = message;
-    document.body.appendChild(notification);
     
+    // Set notification style based on type
+    notification.style.backgroundColor = 'var(--download-color)';
+    
+    switch(type) {
+      case 'error':
+        notification.style.backgroundColor = 'var(--primary-color)';
+        notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        break;
+      case 'info':
+        notification.style.backgroundColor = 'var(--highlight-color)';
+        notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+        break;
+      case 'success':
+      default:
+        notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+    }
+    
+    // Show the notification
+    notification.classList.add('show');
+    
+    // Hide after 3 seconds
     setTimeout(() => {
-      notification.classList.add('show');
-      setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-          document.body.removeChild(notification);
-        }, 300);
-      }, 3000);
-    }, 10);
+      notification.classList.remove('show');
+    }, 3000);
+    
+    document.body.appendChild(notification);
   }
 
   function onPlayerReady(event) {
@@ -251,5 +293,252 @@ document.addEventListener('DOMContentLoaded', () => {
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
     const match = url.match(regex);
     return match ? match[1] : null;
+  }
+
+  // Add animated placeholder to the input field
+  function setupAnimatedPlaceholder(inputElement) {
+    const placeholders = [
+      "Paste YouTube link here...",
+      "Try with a YouTube Shorts link...",
+      "Enter video ID directly...",
+      "Try a popular music video link..."
+    ];
+    let currentIndex = 0;
+    
+    // Only animate if not focused
+    const animatePlaceholder = () => {
+      if (document.activeElement !== inputElement && !inputElement.value) {
+        currentIndex = (currentIndex + 1) % placeholders.length;
+        inputElement.placeholder = placeholders[currentIndex];
+      }
+    };
+    
+    setInterval(animatePlaceholder, 3000);
+    
+    // Reset to default placeholder when focused
+    inputElement.addEventListener('focus', () => {
+      inputElement.placeholder = "Paste YouTube link here...";
+    });
+  }
+
+  // Handle the check button click event
+  async function handleCheckBtnClick() {
+    const videoUrl = document.getElementById('video-url').value.trim();
+    const loaderElement = document.querySelector('.loader');
+    const resultsElement = document.querySelector('.results');
+    const errorElement = document.getElementById('error');
+    
+    // Clear previous results
+    errorElement.textContent = '';
+    errorElement.style.display = 'none';
+    
+    // Validate URL
+    if (!videoUrl) {
+      showNotification('Please enter a YouTube video URL', 'error');
+      return;
+    }
+    
+    if (!isValidYoutubeUrl(videoUrl)) {
+      showNotification('Invalid YouTube URL format', 'error');
+      return;
+    }
+    
+    // Extract video ID
+    const videoId = extractVideoId(videoUrl);
+    if (!videoId) {
+      showNotification('Could not extract video ID from the URL', 'error');
+      return;
+    }
+    
+    // Show loader
+    loaderElement.style.display = 'block';
+    resultsElement.style.display = 'none';
+    
+    // Animate loader messages
+    startLoaderAnimation();
+
+    try {
+      // Save current video ID
+      currentVideoId = videoId;
+      
+      // Initialize YouTube player iframe
+      if (!player) {
+        initializePlayer(videoId);
+      } else {
+        player.loadVideoById(videoId);
+        player.stopVideo();
+      }
+      
+      // Get video quality and information
+      await getVideoInfo(videoId);
+      
+      // Hide loader and show results
+      loaderElement.style.display = 'none';
+      resultsElement.style.display = 'block';
+      
+      // Scroll to results
+      resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // Show success notification
+      showNotification('Video analysis complete!', 'success');
+    } catch (error) {
+      // Handle errors
+      loaderElement.style.display = 'none';
+      errorElement.textContent = error.message || 'An error occurred while fetching video information. Please try again.';
+      errorElement.style.display = 'block';
+      showNotification('Failed to analyze video', 'error');
+    }
+  }
+
+  // Start the animated loading messages
+  function startLoaderAnimation() {
+    const messages = document.querySelectorAll('.loader-msg');
+    messages.forEach((msg, index) => {
+      msg.style.opacity = '0';
+      setTimeout(() => {
+        msg.style.opacity = '1';
+      }, index * 600);
+    });
+  }
+
+  // Initialize the YouTube Player
+  function initializePlayer(videoId) {
+    player = new YT.Player('player', {
+      height: '360',
+      width: '640',
+      videoId: videoId,
+      playerVars: {
+        'playsinline': 1,
+        'controls': 0,
+        'disablekb': 1,
+        'rel': 0
+      },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+
+  // Get video information
+  async function getVideoInfo(videoId) {
+    // Wait for player to be ready
+    await waitForPlayerToBeReady();
+    
+    // Get available quality levels
+    const qualities = player.getAvailableQualityLevels();
+    displayQuality(qualities[0]);
+    
+    // Get video details
+    const videoData = player.getVideoData();
+    const duration = player.getDuration();
+    const videoTitle = videoData.title;
+    
+    // Display video information
+    displayVideoInfo(videoId, videoTitle, duration);
+  }
+
+  // Wait for the YouTube player to be ready
+  function waitForPlayerToBeReady() {
+    return new Promise((resolve, reject) => {
+      const checkPlayerReady = () => {
+        if (player && player.getPlayerState !== undefined) {
+          resolve();
+        } else {
+          setTimeout(checkPlayerReady, 100);
+        }
+      };
+      checkPlayerReady();
+    });
+  }
+
+  // Display video quality
+  function displayQuality(quality) {
+    const qualityDisplay = document.getElementById('quality-display');
+    const formattedQuality = formatQuality(quality);
+    qualityDisplay.textContent = formattedQuality;
+  }
+
+  // Display video information
+  function displayVideoInfo(videoId, title, duration) {
+    const titleElement = document.getElementById('title');
+    const thumbnailElement = document.getElementById('thumbnail');
+    const durationElement = document.getElementById('duration');
+    const durationBadgeElement = document.getElementById('duration-badge');
+    const channelNameElement = document.getElementById('channel-name');
+    const channelLogoElement = document.getElementById('channel-logo');
+    const viewsElement = document.getElementById('views');
+    const likesElement = document.getElementById('likes');
+    const publishedElement = document.getElementById('published');
+    const descriptionElement = document.getElementById('description');
+    
+    // Set title
+    titleElement.textContent = title;
+    
+    // Set thumbnail
+    thumbnailElement.src = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    thumbnailElement.onerror = () => {
+      thumbnailElement.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+    };
+    
+    // Set duration
+    const formattedDuration = formatDuration(duration);
+    durationElement.textContent = formattedDuration;
+    durationBadgeElement.textContent = formattedDuration;
+    
+    // Get additional info (mock data for now since YouTube API restrictions)
+    // In a real app, this would come from a server request to the YouTube API
+    const channelName = "Channel Name";  // Default value, should be from API
+    const views = "1,000,000+";          // Default value, should be from API
+    const likes = "50,000+";             // Default value, should be from API
+    const publishedDate = "2023-01-01";  // Default value, should be from API
+    const description = "Video description would go here. This is a placeholder since we're not making an actual API call to YouTube.";
+    
+    // Set values
+    channelNameElement.textContent = channelName;
+    channelLogoElement.src = "https://yt3.googleusercontent.com/ytc/AOPolaSyCnytEsr_z4CIwPXJ5fEoXoHRFNR8FOaGt3FR=s88-c-k-c0x00ffffff-no-rj"; // Default channel logo
+    viewsElement.textContent = views;
+    likesElement.textContent = likes;
+    publishedElement.textContent = formatDate(publishedDate);
+    descriptionElement.textContent = description;
+  }
+
+  // Format quality string to be more readable
+  function formatQuality(quality) {
+    const qualityMap = {
+      'small': '240p',
+      'medium': '360p',
+      'large': '480p',
+      'hd720': '720p HD',
+      'hd1080': '1080p Full HD',
+      'hd1440': '1440p QHD',
+      'hd2160': '2160p 4K',
+      'highres': '4K+'
+    };
+    
+    return qualityMap[quality] || quality;
+  }
+
+  // Handle download button click
+  function handleDownload(format) {
+    if (!currentVideoId) {
+      showNotification('No video selected for download', 'error');
+      return;
+    }
+    
+    // Send download request to server
+    const downloadUrl = `/download?url=https://www.youtube.com/watch?v=${currentVideoId}&format=${format}`;
+    
+    // Show notification
+    showNotification(`Starting ${format.toUpperCase()} download...`, 'info');
+    
+    // Open in new tab or initiate download
+    window.open(downloadUrl, '_blank');
+  }
+
+  // Check if the URL is a valid YouTube URL
+  function isValidYoutubeUrl(url) {
+    const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
+    return youtubeRegex.test(url);
   }
 }); 
