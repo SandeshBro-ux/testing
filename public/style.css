@@ -36,6 +36,15 @@ header {
   margin-bottom: 30px;
 }
 
+.youtube-brand {
+  margin-bottom: 20px;
+}
+
+.youtube-logo {
+  width: 120px;
+  height: auto;
+}
+
 header h1 {
   color: var(--primary-color);
   margin-bottom: 10px;
@@ -150,18 +159,24 @@ button:hover {
 }
 
 .results h2 {
-  color: var(--secondary-color);
+  color: var(--text-color);
   margin-bottom: 20px;
   text-align: center;
 }
 
-/* Video details section */
-#videoDetails {
-  margin-top: 30px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 20px;
+/* Quality info section */
+.quality-info {
+  text-align: center;
+  margin-bottom: 25px;
 }
 
+.quality-text {
+  font-size: 18px;
+  color: var(--text-color);
+  margin-bottom: 10px;
+}
+
+/* Video details section */
 .video-info {
   display: flex;
   flex-wrap: wrap;
@@ -225,65 +240,13 @@ button:hover {
 .description h4 {
   display: flex;
   align-items: center;
+  margin-bottom: 10px;
+  color: var(--text-color);
+  font-weight: 600;
 }
 
 .description h4 .icon {
   margin-right: 8px;
-}
-
-.channel-info {
-  display: flex;
-  align-items: center;
-  margin: 15px 0;
-}
-
-.channel-logo {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 12px;
-  object-fit: cover;
-  border: 2px solid var(--border-color);
-}
-
-.channel-info .stat-item {
-  margin-bottom: 0 !important;
-  flex: 1;
-}
-
-.quality-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 15px 0;
-}
-
-.quality-icon {
-  width: 28px;
-  height: 28px;
-  color: var(--highlight-color);
-  margin-right: 8px;
-}
-
-.quality-badge {
-  display: inline-block;
-  padding: 6px 12px;
-  background-color: var(--highlight-color);
-  color: white;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
-}
-
-.description {
-  margin-top: 20px;
-}
-
-.description h4 {
-  margin-bottom: 10px;
-  color: var(--text-color);
-  font-weight: 600;
 }
 
 .description p {
@@ -305,6 +268,49 @@ button:hover {
   text-align: center;
 }
 
+.channel-info {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+}
+
+.channel-logo-container {
+  width: 45px;
+  height: 45px;
+  margin-right: 12px;
+}
+
+.channel-logo {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  margin-right: 12px;
+  object-fit: cover;
+  border: 2px solid var(--border-color);
+}
+
+.channel-info .stat-item {
+  margin-bottom: 0 !important;
+  flex: 1;
+}
+
+.channel-name {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: white;
+}
+
+.quality-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: var(--highlight-color);
+  color: white;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+}
+
 /* Footer */
 footer {
   margin-top: 30px;
@@ -312,25 +318,6 @@ footer {
   color: #888;
   font-size: 14px;
   opacity: 0.7;
-}
-
-.footer-logos {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-}
-
-.footer-logo {
-  width: 32px;
-  height: 32px;
-  opacity: 0.7;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-}
-
-.footer-logo:hover {
-  opacity: 1;
-  transform: scale(1.1);
 }
 
 /* Media queries */

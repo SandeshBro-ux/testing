@@ -10,6 +10,9 @@
 <body>
   <div class="container">
     <header>
+      <div class="youtube-brand">
+        <img src="https://www.youtube.com/img/desktop/yt_1200.png" alt="YouTube" class="youtube-logo">
+      </div>
       <h1>YouTube Quality Inspector</h1>
       <p>Enter a YouTube URL to check video quality and details</p>
     </header>
@@ -31,17 +34,12 @@
       </div>
 
       <div class="results" id="results">
-        <h2>Video Information</h2>
-        <div>
-          <div class="quality-container">
-            <svg class="quality-icon" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM8 15c0-1.66 1.34-3 3-3 .35 0 .69.07 1 .18V6h5v2h-3v7.03c-.02 1.64-1.35 2.97-3 2.97-1.66 0-3-1.34-3-3z"></path>
-            </svg>
-            <span id="maxQuality" class="quality-badge"></span>
-          </div>
-        </div>
-        
         <div id="videoDetails" style="display:none;">
+          <h2>Video Information</h2>
+          <div class="quality-info">
+            <p class="quality-text">The best quality for the video is <span id="maxQuality" class="quality-badge"></span></p>
+          </div>
+
           <div class="video-info">
             <div class="thumbnail-container">
               <img id="thumbnail" src="" alt="Video Thumbnail">
@@ -49,12 +47,11 @@
             <div class="details">
               <h3 id="videoTitle"></h3>
               <div class="channel-info">
-                <img id="channelLogo" class="channel-logo" src="" alt="Channel Logo">
+                <div class="channel-logo-container">
+                  <img id="channelLogo" class="channel-logo" src="" alt="Channel Logo">
+                </div>
                 <p class="stat-item">
-                  <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"></path>
-                  </svg>
-                  <span>Channel: <span id="channelName"></span></span>
+                  <span class="channel-name" id="channelName"></span>
                 </p>
               </div>
               <p class="stat-item">
@@ -98,10 +95,7 @@
     </main>
 
     <footer>
-      <div class="footer-logos">
-        <img src="https://www.youtube.com/s/desktop/bf052db7/img/favicon_144x144.png" alt="YouTube Logo" class="footer-logo">
-        <img src="https://www.gstatic.com/devrel-devsite/prod/v2210deb8920cd4a55bd580441aa58e7853afc04b39a9d9ac4198e1cd7fbe04ef/developers/images/favicon.png" alt="Google API Logo" class="footer-logo">
-      </div>
+      <p>© 2023 YouTube Quality Inspector</p>
     </footer>
   </div>
 
