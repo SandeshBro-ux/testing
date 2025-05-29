@@ -60,9 +60,20 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/config', (req, res) => {
+  // Debug logging
+  console.log('Environment variables:', {
+    YOUTUBE_API_KEY_EXISTS: !!process.env.YOUTUBE_API_KEY,
+    YOUTUBE_API_KEY_LENGTH: process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0,
+    NODE_ENV: process.env.NODE_ENV
+  });
+  logMessage(`API Key requested. Key exists: ${!!process.env.YOUTUBE_API_KEY}, Length: ${process.env.YOUTUBE_API_KEY ? process.env.YOUTUBE_API_KEY.length : 0}`);
+  
+  // Fallback to hardcoded key if environment variable is missing
+  const apiKey = process.env.YOUTUBE_API_KEY || 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
+  
   // Send only the necessary configuration variables to the client
   res.json({
-    youtubeApiKey: process.env.YOUTUBE_API_KEY || ''
+    youtubeApiKey: apiKey
   });
 });
 

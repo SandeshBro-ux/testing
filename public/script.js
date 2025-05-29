@@ -26,10 +26,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Fetch API key from server when page loads
   fetch('/api/config')
-    .then(response => response.json())
+    .then(response => {
+      console.log("Config API response status:", response.status);
+      return response.json();
+    })
     .then(config => {
+      console.log("Config received:", config);
       YOUTUBE_API_KEY = config.youtubeApiKey;
-      console.log("API key loaded from server");
+      console.log("API key loaded from server. Length:", YOUTUBE_API_KEY.length);
+      if (!YOUTUBE_API_KEY) {
+        showNotification("Warning: API key is empty. Analysis may not work.", "error");
+      }
     })
     .catch(error => {
       console.error("Failed to load API key:", error);
