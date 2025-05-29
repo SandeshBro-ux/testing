@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const notificationElement = document.getElementById('notification');
   const qualityTextElement = document.querySelector('.quality-text');
   const submitBtn = document.getElementById('submitBtn');
+  const closeBtn = document.querySelector('.notification-close');
+  const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
 
   // Remove server API key fetch since we're using hardcoded key
   console.log("Using hardcoded API key for immediate functionality");
@@ -424,4 +426,61 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(animatePlaceholder, 3000);
     inputElement.addEventListener('focus', () => inputElement.placeholder = "Paste YouTube link here...");
   }
+
+  // Function to initialize all event listeners
+  function initEventListeners() {
+    const form = document.getElementById('videoForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const closeBtn = document.querySelector('.notification-close');
+    const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
+    
+    // Add event listener for form submission
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        processVideoRequest();
+      });
+    }
+
+    // Add event listener for submit button click
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        processVideoRequest();
+      });
+    }
+    
+    // Add event listener for notification close button
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        document.querySelector('.notification').classList.remove('show');
+      });
+    }
+    
+    // Add event listener for copy description button
+    if (copyDescriptionBtn) {
+      copyDescriptionBtn.addEventListener('click', copyDescriptionText);
+    }
+  }
+
+  // Function to copy description text to clipboard
+  function copyDescriptionText() {
+    const descriptionText = document.querySelector('.description p').textContent;
+    if (!descriptionText) {
+      showNotification('No description to copy', 'info');
+      return;
+    }
+    
+    navigator.clipboard.writeText(descriptionText)
+      .then(() => {
+        showNotification('Description copied to clipboard', 'success');
+      })
+      .catch(err => {
+        showNotification('Failed to copy description', 'error');
+        console.error('Could not copy text: ', err);
+      });
+  }
+
+  // Call initEventListeners when the DOM is fully loaded
+  initEventListeners();
 }); 
