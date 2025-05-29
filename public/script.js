@@ -1,6 +1,6 @@
 let player;
-// Initialize with empty key, will be loaded from server
-let YOUTUBE_API_KEY = '';
+// Hardcoded API key to ensure functionality
+const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
 let currentVideoId = null;
 let isYoutubeShort = false;
 
@@ -24,25 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const qualityTextElement = document.querySelector('.quality-text');
   const submitBtn = document.getElementById('submitBtn');
 
-  // Fetch API key from server when page loads
-  fetch('/api/config')
-    .then(response => {
-      console.log("Config API response status:", response.status);
-      return response.json();
-    })
-    .then(config => {
-      console.log("Config received:", config);
-      YOUTUBE_API_KEY = config.youtubeApiKey;
-      console.log("API key loaded from server. Length:", YOUTUBE_API_KEY.length);
-      if (!YOUTUBE_API_KEY) {
-        showNotification("Warning: API key is empty. Analysis may not work.", "error");
-      }
-    })
-    .catch(error => {
-      console.error("Failed to load API key:", error);
-      showNotification("Failed to load configuration. Please refresh the page.", "error");
-    });
-
+  // Remove server API key fetch since we're using hardcoded key
+  console.log("Using hardcoded API key for immediate functionality");
+  
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     urlInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
   }
@@ -142,11 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error processing video request:', error.name, error.message, error.stack);
       let userErrorMessage = error.message || 'Failed to fetch video details. Please check the URL or try again later.';
       
-      if (!YOUTUBE_API_KEY) { // Check if API key is empty
-        userErrorMessage = 'API key is not loaded yet. Please refresh the page and try again.';
-        console.error("CRITICAL: YouTube API Key is not loaded from server");
-      } else if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('accessNotConfigured') || error.message.includes('keyInvalid') || error.message.includes('disabled')) {
-        userErrorMessage = 'Failed to fetch video details due to a YouTube API key issue (e.g., invalid, disabled, or over quota). Please contact the site administrator.';
+      if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('accessNotConfigured') || error.message.includes('keyInvalid') || error.message.includes('disabled')) {
+        userErrorMessage = 'Failed to fetch video details due to a YouTube API key issue (e.g., quota exceeded). Please try again later.';
         console.error("YOUTUBE API KEY ISSUE: " + error.message);
       } else if (error.message.includes('not found') || error.message.includes('private') || error.message.includes('unavailable') || error.message.includes('deleted')) {
         userErrorMessage = 'Video not found, or it is private/deleted, or the URL is incorrect.';
