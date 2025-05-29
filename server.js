@@ -1,3 +1,6 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -54,6 +57,13 @@ app.use(express.static('public'));
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/api/config', (req, res) => {
+  // Send only the necessary configuration variables to the client
+  res.json({
+    youtubeApiKey: process.env.YOUTUBE_API_KEY || ''
+  });
 });
 
 app.get('/debug', async (req, res) => {

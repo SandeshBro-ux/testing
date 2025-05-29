@@ -1,11 +1,6 @@
 let player;
-// REPLACE THIS with your own YouTube Data API v3 key from Google Cloud Console
-// Visit https://console.cloud.google.com/
-// 1. Create a new project
-// 2. Enable the YouTube Data API v3
-// 3. Create credentials (API key)
-// 4. Paste your key below
-const YOUTUBE_API_KEY = 'YOUR_ACTUAL_YOUTUBE_API_KEY_HERE';
+// Initialize with empty key, will be loaded from server
+let YOUTUBE_API_KEY = '';
 let currentVideoId = null;
 let isYoutubeShort = false;
 
@@ -28,6 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const notificationElement = document.getElementById('notification');
   const qualityTextElement = document.querySelector('.quality-text');
   const submitBtn = document.getElementById('submitBtn');
+
+  // Fetch API key from server when page loads
+  fetch('/api/config')
+    .then(response => response.json())
+    .then(config => {
+      YOUTUBE_API_KEY = config.youtubeApiKey;
+      console.log("API key loaded from server");
+    })
+    .catch(error => {
+      console.error("Failed to load API key:", error);
+      showNotification("Failed to load configuration. Please refresh the page.", "error");
+    });
 
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     urlInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
@@ -128,9 +135,9 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error processing video request:', error.name, error.message, error.stack);
       let userErrorMessage = error.message || 'Failed to fetch video details. Please check the URL or try again later.';
       
-      if (YOUTUBE_API_KEY === 'YOUR_ACTUAL_YOUTUBE_API_KEY_HERE') { // Check if default key is still used
-        userErrorMessage = 'SITE CONFIGURATION ERROR: Default API key is in use. Please contact the site administrator.';
-        console.error("CRITICAL: Default YouTube API Key is still in use. This will not work in production.");
+      if (!YOUTUBE_API_KEY) { // Check if API key is empty
+        userErrorMessage = 'API key is not loaded yet. Please refresh the page and try again.';
+        console.error("CRITICAL: YouTube API Key is not loaded from server");
       } else if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('accessNotConfigured') || error.message.includes('keyInvalid') || error.message.includes('disabled')) {
         userErrorMessage = 'Failed to fetch video details due to a YouTube API key issue (e.g., invalid, disabled, or over quota). Please contact the site administrator.';
         console.error("YOUTUBE API KEY ISSUE: " + error.message);
