@@ -59,18 +59,39 @@ document.addEventListener('DOMContentLoaded', () => {
     currentVideoId = extractVideoId(url);
 
     // Initial UI reset for new request
-    errorDisplayElement.textContent = '';
-    errorDisplayElement.style.display = 'none';
-    videoDetailsEl.style.display = 'none'; // Hide details section
-    resultsEl.style.display = 'none';    // Hide overall results container initially
-    loader.style.display = 'block';      // Show loader
+    if (errorDisplayElement) {
+        errorDisplayElement.textContent = '';
+        errorDisplayElement.style.display = 'none';
+    } else {
+        console.error("CRITICAL: errorDisplayElement is null!");
+    }
+
+    if (videoDetailsEl) {
+        videoDetailsEl.style.display = 'none'; // Hide details section
+    } else {
+        console.error("CRITICAL: videoDetailsEl is null when trying to hide it!");
+    }
+    
+    if (resultsEl) {
+        resultsEl.style.display = 'none';    // Hide overall results container initially
+    } else {
+         console.error("CRITICAL: resultsEl is null when trying to hide it!");
+    }
+
+    if (loader) {
+        loader.style.display = 'block';      // Show loader
+    } else {
+        console.error("CRITICAL: loader element is null!");
+    }
 
     if (!currentVideoId) {
-      loader.style.display = 'none';
+      if (loader) loader.style.display = 'none';
       const msg = 'Invalid YouTube URL. Please enter a valid link (e.g., https://www.youtube.com/watch?v=VIDEO_ID).';
-      errorDisplayElement.textContent = msg;
-      errorDisplayElement.style.display = 'block';
-      resultsEl.style.display = 'block'; // Show results container to display this error
+      if (errorDisplayElement) {
+        errorDisplayElement.textContent = msg;
+        errorDisplayElement.style.display = 'block';
+      }
+      if (resultsEl) resultsEl.style.display = 'block'; // Show results container to display this error
       showNotification(msg, 'error');
       return;
     }
@@ -111,12 +132,14 @@ document.addEventListener('DOMContentLoaded', () => {
         userErrorMessage = 'Video not found, or it is private/deleted, or the URL is incorrect.';
       }
 
-      errorDisplayElement.textContent = userErrorMessage;
-      errorDisplayElement.style.display = 'block';
-      resultsEl.style.display = 'block'; // Ensure results container is visible for the error message
+      if (errorDisplayElement) {
+        errorDisplayElement.textContent = userErrorMessage;
+        errorDisplayElement.style.display = 'block';
+      }
+      if (resultsEl) resultsEl.style.display = 'block'; // Ensure results container is visible for the error message
       showNotification(userErrorMessage, 'error');
     } finally {
-      loader.style.display = 'none'; // Always hide loader
+      if (loader) loader.style.display = 'none'; // Always hide loader
     }
   }
 
