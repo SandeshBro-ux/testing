@@ -1,5 +1,11 @@
 let player;
-const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
+// REPLACE THIS with your own YouTube Data API v3 key from Google Cloud Console
+// Visit https://console.cloud.google.com/
+// 1. Create a new project
+// 2. Enable the YouTube Data API v3
+// 3. Create credentials (API key)
+// 4. Paste your key below
+const YOUTUBE_API_KEY = 'YOUR_ACTUAL_YOUTUBE_API_KEY_HERE';
 let currentVideoId = null;
 let isYoutubeShort = false;
 
@@ -122,7 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('Error processing video request:', error.name, error.message, error.stack);
       let userErrorMessage = error.message || 'Failed to fetch video details. Please check the URL or try again later.';
       
-      if (YOUTUBE_API_KEY === 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4') { // Check if default key is still used
+      if (YOUTUBE_API_KEY === 'YOUR_ACTUAL_YOUTUBE_API_KEY_HERE') { // Check if default key is still used
         userErrorMessage = 'SITE CONFIGURATION ERROR: Default API key is in use. Please contact the site administrator.';
         console.error("CRITICAL: Default YouTube API Key is still in use. This will not work in production.");
       } else if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('accessNotConfigured') || error.message.includes('keyInvalid') || error.message.includes('disabled')) {
