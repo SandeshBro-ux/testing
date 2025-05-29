@@ -39,8 +39,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   
+  // Direct click handler for the submit button
+  submitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    processVideoRequest();
+  });
+  
   form.addEventListener('submit', (e) => {
     e.preventDefault();
+    processVideoRequest();
+  });
+  
+  // Function to process the video request
+  function processVideoRequest() {
     const url = urlInput.value.trim();
     
     // Check if it's a YouTube Shorts URL
@@ -49,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoId = extractVideoId(url);
     if (!videoId) {
       showResult('Invalid YouTube URL');
+      showNotification('Invalid YouTube URL. Please enter a valid YouTube link.', 'error');
       return;
     }
     currentVideoId = videoId;
@@ -78,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
-  });
+  }
 
   // Event listeners for download buttons
   downloadMP4Button.addEventListener('click', () => {
