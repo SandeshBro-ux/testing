@@ -1,6 +1,7 @@
 let player;
 const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
 let currentVideoId = null;
+let isYoutubeShort = false;
 
 // This function is called by the YouTube IFrame API script
 function onYouTubeIframeAPIReady() {
@@ -16,8 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const videoDetailsEl = document.getElementById('videoDetails');
   const downloadMP4Button = document.getElementById('downloadMP4');
   const downloadMP3Button = document.getElementById('downloadMP3');
-  const downloadSubtitleBtn = document.getElementById('download-subtitle');
+  const downloadSubtitleBtn = document.getElementById('downloadSubtitles');
   const notificationElement = document.getElementById('notification');
+  const qualityTextElement = document.querySelector('.quality-text');
+  const submitBtn = document.getElementById('submitBtn');
 
   // Initialize with sample video URL for demo purposes
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -28,9 +31,21 @@ document.addEventListener('DOMContentLoaded', () => {
   urlInput.focus();
   
   // Add event listeners
+  // Detect if Enter key is pressed in the input field
+  urlInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
+    }
+  });
+  
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const url = urlInput.value.trim();
+    
+    // Check if it's a YouTube Shorts URL
+    isYoutubeShort = isYouTubeShortUrl(url);
+    
     const videoId = extractVideoId(url);
     if (!videoId) {
       showResult('Invalid YouTube URL');
@@ -157,6 +172,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         showResult(formatQualityLabel(maxQuality));
+        
+        // Toggle quality text display based on whether it's a Shorts URL
+        if (qualityTextElement) {
+          qualityTextElement.style.display = isYoutubeShort ? 'none' : 'block';
+        }
       }, 500);
     }
   }
@@ -185,6 +205,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loader.style.display = 'none';
     maxQualityEl.textContent = text;
     results.style.display = 'block';
+    
+    // Toggle quality text display based on whether it's a Shorts URL
+    if (qualityTextElement) {
+      qualityTextElement.style.display = isYoutubeShort ? 'none' : 'block';
+    }
   }
 
   function fetchVideoDetails(videoId) {
@@ -248,6 +273,11 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Display the video details section
     videoDetailsEl.style.display = 'block';
+    
+    // Toggle quality text display based on whether it's a Shorts URL
+    if (qualityTextElement) {
+      qualityTextElement.style.display = isYoutubeShort ? 'none' : 'block';
+    }
   }
 
   function formatNumber(num) {
@@ -290,9 +320,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function extractVideoId(url) {
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
     const match = url.match(regex);
     return match ? match[1] : null;
+  }
+
+  // Function to check if the URL is a YouTube Shorts URL
+  function isYouTubeShortUrl(url) {
+    return url.includes('youtube.com/shorts/') || url.includes('youtube.com/short/');
   }
 
   // Add animated placeholder to the input field
@@ -319,75 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
     inputElement.addEventListener('focus', () => {
       inputElement.placeholder = "Paste YouTube link here...";
     });
-  }
-
-  // Handle the check button click event
-  async function handleCheckBtnClick() {
-    const videoUrl = document.getElementById('video-url').value.trim();
-    const loaderElement = document.querySelector('.loader');
-    const resultsElement = document.querySelector('.results');
-    const errorElement = document.getElementById('error');
-    
-    // Clear previous results
-    errorElement.textContent = '';
-    errorElement.style.display = 'none';
-    
-    // Validate URL
-    if (!videoUrl) {
-      showNotification('Please enter a YouTube video URL', 'error');
-      return;
-    }
-    
-    if (!isValidYoutubeUrl(videoUrl)) {
-      showNotification('Invalid YouTube URL format', 'error');
-      return;
-    }
-    
-    // Extract video ID
-    const videoId = extractVideoId(videoUrl);
-    if (!videoId) {
-      showNotification('Could not extract video ID from the URL', 'error');
-      return;
-    }
-    
-    // Show loader
-    loaderElement.style.display = 'block';
-    resultsElement.style.display = 'none';
-    
-    // Animate loader messages
-    startLoaderAnimation();
-
-    try {
-      // Save current video ID
-      currentVideoId = videoId;
-      
-      // Initialize YouTube player iframe
-      if (!player) {
-        initializePlayer(videoId);
-      } else {
-        player.loadVideoById(videoId);
-        player.stopVideo();
-      }
-      
-      // Get video quality and information
-      await getVideoInfo(videoId);
-      
-      // Hide loader and show results
-      loaderElement.style.display = 'none';
-      resultsElement.style.display = 'block';
-      
-      // Scroll to results
-      resultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      
-      // Show success notification
-      showNotification('Video analysis complete!', 'success');
-    } catch (error) {
-      // Handle errors
-      loaderElement.style.display = 'none';
-      errorElement.textContent = error.message || 'An error occurred while fetching video information. Please try again.';
-      errorElement.style.display = 'block';
-      showNotification('Failed to analyze video', 'error');
-    }
   }
 
   // Start the animated loading messages
@@ -461,15 +427,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Display video information
   function displayVideoInfo(videoId, title, duration) {
-    const titleElement = document.getElementById('title');
+    const titleElement = document.getElementById('videoTitle');
     const thumbnailElement = document.getElementById('thumbnail');
     const durationElement = document.getElementById('duration');
     const durationBadgeElement = document.getElementById('duration-badge');
-    const channelNameElement = document.getElementById('channel-name');
-    const channelLogoElement = document.getElementById('channel-logo');
-    const viewsElement = document.getElementById('views');
-    const likesElement = document.getElementById('likes');
-    const publishedElement = document.getElementById('published');
+    const channelNameElement = document.getElementById('channelName');
+    const channelLogoElement = document.getElementById('channelLogo');
+    const viewsElement = document.getElementById('viewCount');
+    const likesElement = document.getElementById('likeCount');
+    const publishedElement = document.getElementById('publishDate');
     const descriptionElement = document.getElementById('description');
     
     // Set title
@@ -538,7 +504,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check if the URL is a valid YouTube URL
   function isValidYoutubeUrl(url) {
-    const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
+    const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/|short\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[\&\?\#].*)?$/;
     return youtubeRegex.test(url);
   }
 }); 

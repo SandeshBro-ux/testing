@@ -45,15 +45,15 @@
           </div>
         </div>
 
-        <div class="input-section">
+        <form id="videoForm" class="input-section">
           <h2 class="form-title">Enter YouTube URL to Begin</h2>
           <div class="form-group">
             <div class="input-with-icon">
               <i class="fab fa-youtube input-icon"></i>
-              <input type="text" id="video-url" placeholder="Paste YouTube link here..." required>
+              <input type="text" id="videoUrl" placeholder="Paste YouTube link here..." required>
             </div>
           </div>
-          <button id="check-btn" class="pulse-button"><i class="fas fa-search"></i> Analyze Video</button>
+          <button type="submit" id="submitBtn" class="pulse-button"><i class="fas fa-search"></i> Analyze Video</button>
           <p class="supported-text">Supports: youtube.com, youtu.be, and short links</p>
 
           <div class="how-it-works">
@@ -64,7 +64,7 @@
               <li><i class="fas fa-download"></i> Download video or audio in your preferred format</li>
             </ul>
           </div>
-        </div>
+        </form>
       </section>
 
       <div class="loader">
@@ -81,23 +81,23 @@
         <h2><i class="fas fa-info-circle"></i> Video Information</h2>
         <div class="error-message" id="error"></div>
 
-        <div class="video-info">
+        <div id="videoDetails" class="video-info">
           <div class="thumbnail-container">
             <img id="thumbnail" src="" alt="Video Thumbnail">
             <div class="duration-badge" id="duration-badge"></div>
           </div>
           <div class="details">
-            <h3 id="title"></h3>
+            <h3 id="videoTitle"></h3>
 
             <div class="channel-info">
               <div class="channel-logo-container">
-                <img id="channel-logo" class="channel-logo" src="" alt="Channel Logo">
+                <img id="channelLogo" class="channel-logo" src="" alt="Channel Logo">
               </div>
               <div class="stat-item">
                 <div class="icon">
                   <i class="fas fa-user"></i>
                 </div>
-                <span id="channel-name" class="channel-name"></span>
+                <span id="channelName" class="channel-name"></span>
               </div>
             </div>
 
@@ -105,14 +105,14 @@
               <div class="icon">
                 <i class="fas fa-eye"></i>
               </div>
-              <p>Views: <span id="views"></span></p>
+              <p>Views: <span id="viewCount"></span></p>
             </div>
 
             <div class="stat-item">
               <div class="icon">
                 <i class="fas fa-thumbs-up"></i>
               </div>
-              <p>Likes: <span id="likes"></span></p>
+              <p>Likes: <span id="likeCount"></span></p>
             </div>
 
             <div class="stat-item">
@@ -126,7 +126,7 @@
               <div class="icon">
                 <i class="far fa-calendar-alt"></i>
               </div>
-              <p>Published: <span id="published"></span></p>
+              <p>Published: <span id="publishDate"></span></p>
             </div>
           </div>
         </div>
@@ -144,22 +144,22 @@
         <div class="download-section">
           <h3><i class="fas fa-download"></i> Download Options</h3>
           <div class="quality-text">
-            <span>Available Quality: <span id="quality-display" class="quality-badge"></span></span>
+            <span>Available Quality: <span id="maxQuality" class="quality-badge"></span></span>
           </div>
           <div class="download-buttons">
-            <button class="download-btn" id="download-video">
+            <button class="download-btn" id="downloadMP4">
               <div class="icon">
                 <i class="fas fa-video"></i>
               </div>
               Download MP4
             </button>
-            <button class="download-btn audio-btn" id="download-audio">
+            <button class="download-btn audio-btn" id="downloadMP3">
               <div class="icon">
                 <i class="fas fa-music"></i>
               </div>
               Download MP3
             </button>
-            <button class="download-btn subtitle-btn" id="download-subtitle">
+            <button class="download-btn subtitle-btn" id="downloadSubtitles">
               <div class="icon">
                 <i class="fas fa-closed-captioning"></i>
               </div>
