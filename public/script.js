@@ -28,21 +28,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   urlInput.focus();
   
+  function handleRequest() {
+    // Clear previous state specifically from errorDisplayElement
+    errorDisplayElement.textContent = '';
+    errorDisplayElement.style.display = 'none';
+    // No need to hide resultsEl or videoDetailsEl here yet, processVideoRequest will manage
+    processVideoRequest();
+  }
+  
   urlInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      processVideoRequest();
+      handleRequest();
     }
   });
   
   submitBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    processVideoRequest();
+    handleRequest();
   });
   
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    processVideoRequest();
+    handleRequest();
   });
   
   async function processVideoRequest() {
@@ -50,26 +58,30 @@ document.addEventListener('DOMContentLoaded', () => {
     isYoutubeShort = isYouTubeShortUrl(url);
     currentVideoId = extractVideoId(url);
 
-    // Clear previous results/errors
+    // Initial UI reset for new request
     errorDisplayElement.textContent = '';
     errorDisplayElement.style.display = 'none';
-    videoDetailsEl.style.display = 'none';
-    resultsEl.style.display = 'none';
-    loader.style.display = 'block';
+    videoDetailsEl.style.display = 'none'; // Hide details section
+    resultsEl.style.display = 'none';    // Hide overall results container initially
+    loader.style.display = 'block';      // Show loader
 
     if (!currentVideoId) {
       loader.style.display = 'none';
-      errorDisplayElement.textContent = 'Invalid YouTube URL. Please enter a valid link.';
+      const msg = 'Invalid YouTube URL. Please enter a valid link (e.g., https://www.youtube.com/watch?v=VIDEO_ID).';
+      errorDisplayElement.textContent = msg;
       errorDisplayElement.style.display = 'block';
-      resultsEl.style.display = 'block';
-      showNotification('Invalid YouTube URL. Please enter a valid YouTube link.', 'error');
+      resultsEl.style.display = 'block'; // Show results container to display this error
+      showNotification(msg, 'error');
       return;
     }
 
     try {
+      // Explicitly tell user we are fetching details
+      showNotification('Fetching video details...', 'info', 1500); // Short-lived notification
+      
       const videoData = await fetchVideoDetails(currentVideoId);
-      displayVideoDetails(videoData);
-      fetchChannelLogo(videoData.snippet.channelId);
+      displayVideoDetails(videoData); // Populates and shows videoDetailsEl
+      fetchChannelLogo(videoData.snippet.channelId); // Async, no await needed here
 
       // Initialize or update player for quality info
       if (player) {
@@ -82,28 +94,43 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
       
-      resultsEl.style.display = 'block';
+      resultsEl.style.display = 'block'; // Show the main results container now that we have details
       showNotification('Video analysis complete!', 'success');
 
     } catch (error) {
-      console.error('Error processing video request:', error);
-      errorDisplayElement.textContent = error.message || 'Failed to fetch video details. Check console for more info.';
+      console.error('Error processing video request:', error.name, error.message, error.stack);
+      let userErrorMessage = error.message || 'Failed to fetch video details. Please check the URL or try again later.';
+      
+      if (YOUTUBE_API_KEY === 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4') { // Check if default key is still used
+        userErrorMessage = 'SITE CONFIGURATION ERROR: Default API key is in use. Please contact the site administrator.';
+        console.error("CRITICAL: Default YouTube API Key is still in use. This will not work in production.");
+      } else if (error.message.includes('API key') || error.message.includes('quota') || error.message.includes('accessNotConfigured') || error.message.includes('keyInvalid') || error.message.includes('disabled')) {
+        userErrorMessage = 'Failed to fetch video details due to a YouTube API key issue (e.g., invalid, disabled, or over quota). Please contact the site administrator.';
+        console.error("YOUTUBE API KEY ISSUE: " + error.message);
+      } else if (error.message.includes('not found') || error.message.includes('private') || error.message.includes('unavailable') || error.message.includes('deleted')) {
+        userErrorMessage = 'Video not found, or it is private/deleted, or the URL is incorrect.';
+      }
+
+      errorDisplayElement.textContent = userErrorMessage;
       errorDisplayElement.style.display = 'block';
-      resultsEl.style.display = 'block';
-      showNotification(error.message || 'Failed to fetch video details.', 'error');
+      resultsEl.style.display = 'block'; // Ensure results container is visible for the error message
+      showNotification(userErrorMessage, 'error');
     } finally {
-      loader.style.display = 'none';
+      loader.style.display = 'none'; // Always hide loader
     }
   }
 
   downloadMP4Button.addEventListener('click', () => {
     if (currentVideoId) initiateDownload(currentVideoId, 'mp4');
+    else showNotification('Please analyze a video first.', 'error');
   });
   downloadMP3Button.addEventListener('click', () => {
     if (currentVideoId) initiateDownload(currentVideoId, 'mp3');
+    else showNotification('Please analyze a video first.', 'error');
   });
   downloadSubtitleBtn.addEventListener('click', () => {
     if (currentVideoId) initiateDownload(currentVideoId, 'srt');
+    else showNotification('Please analyze a video first.', 'error');
   });
 
   const features = document.querySelectorAll('.feature');
@@ -116,11 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function initiateDownload(videoId, format) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     const downloadUrl = `/download?url=${encodeURIComponent(videoUrl)}&format=${format}`;
-    showNotification(`Starting ${format.toUpperCase()} download...`, 'info');
+    showNotification(`Preparing ${format.toUpperCase()} download...`, 'info');
     window.open(downloadUrl, '_blank');
   }
 
-  function showNotification(message, type = 'success') {
+  function showNotification(message, type = 'success', duration = 3000) {
     const notification = document.getElementById('notification');
     if (!notification) return;
 
@@ -141,26 +168,34 @@ document.addEventListener('DOMContentLoaded', () => {
     notification.style.backgroundColor = bgColor;
     notification.innerHTML = `<i class="${iconClass}"></i> ${message}`;
     notification.classList.add('show');
-    setTimeout(() => notification.classList.remove('show'), 3000);
+    setTimeout(() => notification.classList.remove('show'), duration);
   }
 
   function onPlayerReady(event) {
-    console.log("Player is ready.");
+    console.log("Player is ready. Attempting to get quality levels for video: " + event.target.getVideoData().video_id);
     const levels = event.target.getAvailableQualityLevels();
     if (levels && levels.length > 0) {
        updateQualityDisplayAfterPlayer(levels);
     } else {
-       event.target.playVideo();
+       console.log("No quality levels onReady, attempting to play video briefly.");
+       event.target.playVideo(); 
     }
   }
 
   function onPlayerStateChange(event) {
-    console.log("Player state changed: " + event.data);
-    if (event.data == YT.PlayerState.PLAYING || event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.CUED) {
+    console.log("Player state changed: " + event.data + " for video: " + player.getVideoData().video_id);
+    // We are interested when the video is cued, playing, or paused as quality levels are usually available then.
+    if (event.data == YT.PlayerState.PLAYING || event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.CUED ) {
       const levels = player.getAvailableQualityLevels();
       if (levels && levels.length > 0){
+        console.log("Quality levels found on state change: ", levels);
         updateQualityDisplayAfterPlayer(levels);
-        if(event.data == YT.PlayerState.PLAYING) player.stopVideo();
+        if(event.data == YT.PlayerState.PLAYING && player.getCurrentTime() < 2 && player.getCurrentTime() > 0) { 
+            console.log("Stopping video after fetching quality (played for " + player.getCurrentTime() + "s).");
+            player.stopVideo();
+        }
+      } else {
+        console.log("No quality levels found on state change: " + event.data);
       }
     }
   }
@@ -170,6 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (levels && levels.length > 0) {
           maxQuality = levels[0] === 'auto' && levels.length > 1 ? levels[1] : levels[0];
       }
+      console.log("Updating quality display with: ", maxQuality);
       updateQualityDisplay(formatQualityLabel(maxQuality));
   }
 
@@ -179,8 +215,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function onPlayerError(event) {
-    console.error("Player Error:", event.data);
-    showNotification('Error with video player. Quality info may be unavailable.', 'error');
+    console.error("Player Error Code:", event.data, "Video ID:", currentVideoId);
+    let playerErrorMsg = 'Error with video player. Quality info may be unavailable.';
+    // See https://developers.google.com/youtube/iframe_api_reference#onError
+    switch(event.data) {
+        case 2: playerErrorMsg = 'Player error: Invalid video ID or request. The video may not exist or is private.'; break;
+        case 5: playerErrorMsg = 'Player error: HTML5 player issue. Try a different browser or update yours.'; break;
+        case 100: playerErrorMsg = 'Player error: Video not found or private.'; break;
+        case 101: case 150: playerErrorMsg = 'Player error: Embedding disabled by the video owner.'; break;
+    }
+    showNotification(playerErrorMsg, 'error');
     updateQualityDisplay("Player Error");
   }
 
@@ -192,35 +236,69 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function fetchVideoDetails(videoId) {
-    return fetch(`https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${YOUTUBE_API_KEY}&part=snippet,statistics,contentDetails`)
+    const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${YOUTUBE_API_KEY}&part=snippet,statistics,contentDetails`;
+    console.log("Fetching video details from: ", url); // Log the URL being fetched
+    return fetch(url)
       .then(response => {
+        console.log("API Response Status: ", response.status, response.statusText);
         if (!response.ok) {
           return response.json().then(errData => {
-            const apiErrorMsg = errData?.error?.message || `YouTube API error: ${response.status}`;
+            console.error("API Error Data (JSON):", errData);
+            const apiErrorMsg = errData?.error?.message || `YouTube API Error: ${response.status} - ${response.statusText || 'Unknown error'}`;
+            // More specific check for API key problems based on typical error structures from Google APIs
+            if (errData?.error?.errors?.[0]?.reason) {
+                const reason = errData.error.errors[0].reason;
+                if (reason === 'keyInvalid' || reason === 'keyDisabled' || reason.toLowerCase().includes('apikey')) {
+                    throw new Error('API key is invalid or disabled.');
+                } else if (reason === 'quotaExceeded') {
+                    throw new Error('API quota exceeded.');
+                } else if (reason === 'accessNotConfigured'){
+                    throw new Error('API access not configured. YouTube Data API v3 might be disabled.');
+                }
+            }
             throw new Error(apiErrorMsg);
-          }).catch(() => { 
-            throw new Error(`YouTube API error: ${response.status}. Unable to parse error details.`);
+          }).catch((jsonParseOrApiError) => { 
+            // This catch handles both JSON parsing errors and errors thrown from the .then(errData => ...) block
+            console.error("Error processing API error response:", jsonParseOrApiError);
+            // If it's an error we constructed, rethrow it, otherwise create a generic one
+            if (jsonParseOrApiError instanceof Error && (jsonParseOrApiError.message.includes('API key') || jsonParseOrApiError.message.includes('quota') || jsonParseOrApiError.message.includes('accessNotConfigured'))) {
+                throw jsonParseOrApiError;
+            }
+            throw new Error(`YouTube API Error: ${response.status} - ${response.statusText || 'Failed to parse error details or network issue.'}`);
           });
         }
         return response.json();
       })
       .then(data => {
+        console.log("API Success Data Received:", data);
         if (data.items && data.items.length > 0) {
           return data.items[0];
         } else {
-          throw new Error('No video details found. The video might be private or deleted.');
+          // This case might happen if the video ID is valid but the video is removed or made private after a 200 OK with empty items
+          throw new Error('Video details not found. The video may have been removed or set to private.');
         }
       });
   }
 
   function fetchChannelLogo(channelId) {
+    if(!channelId) {
+        console.warn("Cannot fetch channel logo: channelId is missing");
+        if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear previous logo
+        return;
+    }
     fetch(`https://www.googleapis.com/youtube/v3/channels?id=${channelId}&key=${YOUTUBE_API_KEY}&part=snippet`)
       .then(response => response.json())
       .then(data => {
-        if (data.items && data.items.length > 0) {
+        if (data.items && data.items.length > 0 && data.items[0].snippet?.thumbnails?.default?.url) {
           document.getElementById('channelLogo').src = data.items[0].snippet.thumbnails.default.url;
+        } else {
+          console.warn("Could not fetch channel logo or logo URL missing.");
+          if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear logo on failure
         }
-      }).catch(error => console.error('Error fetching channel logo:', error));
+      }).catch(error => {
+          console.error('Error fetching channel logo:', error);
+          if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear logo on error
+      });
   }
 
   function displayVideoDetails(videoData) {
@@ -228,28 +306,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const statistics = videoData.statistics;
     const contentDetails = videoData.contentDetails;
 
-    document.getElementById('videoTitle').textContent = snippet.title;
-    document.getElementById('channelName').textContent = snippet.channelTitle;
+    document.getElementById('videoTitle').textContent = snippet.title || 'N/A';
+    document.getElementById('channelName').textContent = snippet.channelTitle || 'N/A';
     document.getElementById('viewCount').textContent = statistics ? formatNumber(statistics.viewCount) : 'N/A';
-    document.getElementById('likeCount').textContent = statistics ? formatNumber(statistics.likeCount || 0) : 'N/A';
-    document.getElementById('publishDate').textContent = formatDate(snippet.publishedAt);
-    document.getElementById('duration').textContent = formatDuration(contentDetails.duration);
+    document.getElementById('likeCount').textContent = statistics ? formatNumber(statistics.likeCount) : 'N/A'; // likeCount can be missing
+    document.getElementById('publishDate').textContent = snippet.publishedAt ? formatDate(snippet.publishedAt) : 'N/A';
+    document.getElementById('duration').textContent = contentDetails.duration ? formatDuration(contentDetails.duration) : 'N/A';
     document.getElementById('description').textContent = snippet.description || 'No description available.';
     
     const thumbnails = snippet.thumbnails;
-    const thumbnailUrl = thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url;
+    const thumbnailUrl = thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url || ''; // Fallback to empty string
     document.getElementById('thumbnail').src = thumbnailUrl;
-    document.getElementById('duration-badge').textContent = formatDuration(contentDetails.duration);
+    document.getElementById('duration-badge').textContent = contentDetails.duration ? formatDuration(contentDetails.duration) : 'N/A';
     
-    videoDetailsEl.style.display = 'flex';
-    
+    videoDetailsEl.style.display = 'flex'; 
     updateQualityDisplay("Loading quality..."); 
   }
 
   function formatNumber(numStr) {
     if (numStr === undefined || numStr === null) return 'N/A';
     const n = parseInt(numStr);
-    if (isNaN(n)) return numStr;
+    if (isNaN(n)) return numStr; 
     if (n >= 1e9) return (n / 1e9).toFixed(1).replace('.0','') + 'B';
     if (n >= 1e6) return (n / 1e6).toFixed(1).replace('.0','') + 'M';
     if (n >= 1e3) return (n / 1e3).toFixed(1).replace('.0','') + 'K';
@@ -257,13 +334,24 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function formatDate(isoString) {
-    const date = new Date(isoString);
-    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    if (!isoString) return 'N/A';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    } catch (e) {
+        console.error("Error formatting date: ", isoString, e);
+        return 'Invalid Date';
+    }
   }
 
   function formatDuration(isoDuration) {
+    if (!isoDuration) return 'N/A';
+    // Regex for ISO 8601 duration (PT#H#M#S)
     const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    if (!match) return 'N/A';
+    if (!match) {
+        console.warn("Could not parse ISO duration: ", isoDuration);
+        return 'N/A';
+    }
     const hours = parseInt(match[1] || 0);
     const minutes = parseInt(match[2] || 0);
     const seconds = parseInt(match[3] || 0);
@@ -273,6 +361,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function extractVideoId(url) {
     const cleanUrl = url.startsWith('@') ? url.substring(1) : url;
+    // Corrected regex: forward slashes inside /.../ don't need double backslashes unless they are part of the pattern itself.
+    // The original linter error pointed to this regex having \/ which is incorrect for a regex literal.
     const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|short\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/;
     const match = cleanUrl.match(regex);
     return match ? match[1] : null;
