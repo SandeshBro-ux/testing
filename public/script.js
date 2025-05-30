@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const downloadMP4Button = document.getElementById('downloadMP4');
   const downloadMP3Button = document.getElementById('downloadMP3');
   const downloadSubtitleBtn = document.getElementById('downloadSubtitles');
+  const download1080pButton = document.getElementById('download1080p');
   const notificationElement = document.getElementById('notification');
   const qualityTextElement = document.querySelector('.quality-text');
   const submitBtn = document.getElementById('submitBtn');
@@ -173,6 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentVideoId) initiateDownload(currentVideoId, 'srt');
     else showNotification('Please analyze a video first.', 'error');
   });
+  download1080pButton.addEventListener('click', () => {
+    if (currentVideoId) downloadHD1080p(currentVideoId);
+    else showNotification('Please analyze a video first.', 'error');
+  });
 
   const features = document.querySelectorAll('.feature');
   features.forEach(feature => {
@@ -183,9 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function initiateDownload(videoId, format) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const downloadUrl = `/download?url=${encodeURIComponent(videoUrl)}&format=${format}`;
-    showNotification(`Preparing ${format.toUpperCase()} download...`, 'info');
-    window.open(downloadUrl, '_blank');
+    // Use y2meta.net proxy service for downloading
+    const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
+    showNotification(`Redirecting to download service...`, 'info');
+    window.open(y2metaUrl, '_blank');
+  }
+
+  function downloadHD1080p(videoId) {
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    // Use y2meta.net proxy service specifically for 1080p downloads
+    const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
+    showNotification('Redirecting to download service for HD 1080p...', 'info');
+    window.open(y2metaUrl, '_blank');
   }
 
   function showNotification(message, type = 'success', duration = 3000) {

@@ -459,6 +459,25 @@ button:hover {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+.hd-btn {
+  background: linear-gradient(to right, #1e88e5, #00bcd4);
+  font-weight: 600;
+  position: relative;
+}
+
+.hd-btn::before {
+  content: 'HD';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background-color: var(--primary-color);
+  color: white;
+  font-size: 10px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
 .audio-btn {
   background-color: var(--audio-color);
 }
