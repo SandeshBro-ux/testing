@@ -395,92 +395,86 @@ app.post('/api/fetch-y2meta-download-link', express.json(), async (req, res) => 
     return res.status(400).json({ error: 'youtubeUrl is required' });
   }
 
-  logMessage(`[PROXY] Received request for y2meta link for: ${youtubeUrl}`);
+  logMessage(`[PROXY v3] Received request for y2meta link for: ${youtubeUrl}`);
 
   try {
-    // Step 1: Search for the video on y2meta - TRYING A DIFFERENT COMMON ENDPOINT
-    const searchPostData = querystring.stringify({
-      query: youtubeUrl,
-      vt: 'mp4' // Specify mp4 format
+    const pageUrl = `https://y2meta.net/en-us3/?url=${encodeURIComponent(youtubeUrl)}`;
+    logMessage(`[PROXY v3] Step 1: Fetching HTML from ${pageUrl}`);
+    
+    const pageHtml = await new Promise((resolve, reject) => {
+      https.get(pageUrl, { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36' } }, (htmlRes) => {
+        let htmlData = '';
+        htmlRes.on('data', (chunk) => htmlData += chunk);
+        htmlRes.on('end', () => resolve(htmlData));
+      }).on('error', (e) => reject(new Error(`Failed to fetch y2meta page: ${e.message}`)));
     });
-    const searchOptions = {
-      hostname: 'y2meta.net', // Keep domain
-      port: 443,
-      path: '/api/ajax', // TRYING NEW PATH for initial search/ping
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': Buffer.byteLength(searchPostData),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://y2meta.net',
-        'Referer': 'https://y2meta.net/en-us3/' // Keep specific referer for now
-      }
-    };
 
-    logMessage(`[PROXY] Step 1: Searching y2meta for ${youtubeUrl}`);
-    const searchResult = await makeY2MetaRequest(searchOptions, searchPostData);
-    logMessage(`[PROXY] Step 1: y2meta search result received.`);
+    logMessage('[PROXY v3] Step 1: HTML page fetched. Logging first 1000 characters:');
+    logMessage(pageHtml.substring(0, 1000)); // Log the beginning of the HTML
 
+    let videoId = null;
+    let targetQualityKey = null;
+    let videoTitle = 'video';
 
-    if (!searchResult || !searchResult.links || !searchResult.vid) {
-      logMessage(`[PROXY] Step 1: Invalid search result structure from y2meta: ${JSON.stringify(searchResult).substring(0, 200)}`);
-      return res.status(500).json({ error: 'Failed to get video info from y2meta (step 1)' });
+    // Try to extract video ID (vid) - more generic patterns
+    const vidPatterns = [
+        /data-id="([a-zA-Z0-9_-]+)"/i,
+        /"vid"\s*:\s*"([a-zA-Z0-9_-]+)"/i,
+        /value="([a-zA-Z0-9_-]{11,})" name="vid"/i, // Common in forms
+        /_id\s*=\s*'([a-zA-Z0-9_-]+)';/i // Common in inline scripts
+    ];
+
+    for (const pattern of vidPatterns) {
+        const match = pageHtml.match(pattern);
+        if (match && match[1]) {
+            videoId = match[1];
+            logMessage(`[PROXY v3] Extracted vid: ${videoId} using pattern: ${pattern}`);
+            break;
+        }
     }
 
-    let targetQualityKey = null;
-    let videoId = searchResult.vid;
-    let videoTitle = searchResult.title || 'video';
-
-    // Find 1080p MP4 link
-    // y2meta often nests links under keys like "p", "mp4", or dynamic keys like "p[0]"
-    // We need to iterate through the 'links' object
-    const linkCategories = searchResult.links;
-    for (const categoryKey in linkCategories) {
-        if (typeof linkCategories[categoryKey] === 'object') {
-            const qualities = linkCategories[categoryKey];
-            for (const qualityId in qualities) {
-                const qualityInfo = qualities[qualityId];
-                if (qualityInfo.q === '1080p' && qualityInfo.f === 'mp4' && qualityInfo.k) {
-                    targetQualityKey = qualityInfo.k;
-                    logMessage(`[PROXY] Found 1080p MP4 with key: ${targetQualityKey}`);
-                    break;
-                }
-            }
-        }
-        if (targetQualityKey) break;
+    if (!videoId) {
+      logMessage('[PROXY v3] Could not extract video ID (vid) from HTML after trying multiple patterns.', 'ERROR');
+      logMessage(`[PROXY v3] Full HTML length: ${pageHtml.length}. Consider reviewing the logged HTML snippet for new patterns.`, 'ERROR');
+      return res.status(500).json({ error: 'Failed to parse video ID from y2meta page. The page structure may have changed.' });
     }
     
-    // Fallback to 720p if 1080p not found
-    if (!targetQualityKey) {
-        logMessage(`[PROXY] 1080p not found, trying 720p.`);
-        for (const categoryKey in linkCategories) {
-            if (typeof linkCategories[categoryKey] === 'object') {
-                const qualities = linkCategories[categoryKey];
-                for (const qualityId in qualities) {
-                    const qualityInfo = qualities[qualityId];
-                    if (qualityInfo.q === '720p' && qualityInfo.f === 'mp4' && qualityInfo.k) {
-                        targetQualityKey = qualityInfo.k;
-                        logMessage(`[PROXY] Found 720p MP4 with key: ${targetQualityKey}`);
-                        break;
-                    }
-                }
+    const titleMatch = pageHtml.match(/<h5 class="card-title">([^<]+)<\/h5>/i) || pageHtml.match(/<title>(.*?)<\/title>/i);
+    if (titleMatch && titleMatch[1]) {
+        videoTitle = titleMatch[1].replace(/Y2Meta - Free YouTube Downloader|YouTube Downloader -|- y2meta.net|Download YouTube video as MP4 and MP3/gi, '').trim();
+        if (videoTitle.toLowerCase().includes('youtube downloader')) videoTitle = 'video';
+        logMessage(`[PROXY v3] Extracted raw title: ${titleMatch[1]}, Cleaned: ${videoTitle}`);
+    }
+
+    const mp4TableRegex = /<div id="mp4"[^>]*>[\s\S]*?<\/div>/i;
+    const mp4TableMatch = pageHtml.match(mp4TableRegex);
+    
+    if (mp4TableMatch && mp4TableMatch[0]) {
+        const mp4Html = mp4TableMatch[0];
+        const qualityRegex1080p = /<td.*?>\s*1080p\s*.*?<span class="badge.*?">mp4<\/span>.*?<\/td>[\s\S]*?data-k="([^"\s]+)"/i;
+        const match1080p = mp4Html.match(qualityRegex1080p);
+        if (match1080p && match1080p[1]) {
+            targetQualityKey = match1080p[1];
+            logMessage(`[PROXY v3] Found 1080p MP4 key via HTML parse: ${targetQualityKey}`);
+        } else {
+            logMessage('[PROXY v3] 1080p key not found, trying 720p.');
+            const qualityRegex720p = /<td.*?>\s*720p\s*.*?<span class="badge.*?">mp4<\/span>.*?<\/td>[\s\S]*?data-k="([^"\s]+)"/i;
+            const match720p = mp4Html.match(qualityRegex720p);
+            if (match720p && match720p[1]) {
+                targetQualityKey = match720p[1];
+                logMessage(`[PROXY v3] Found 720p MP4 key via HTML parse: ${targetQualityKey}`);
             }
-            if (targetQualityKey) break;
         }
+    } else {
+        logMessage('[PROXY v3] MP4 section not found in HTML.', 'ERROR');
     }
-
 
     if (!targetQualityKey) {
-      logMessage(`[PROXY] Step 1: 1080p or 720p MP4 quality not found in y2meta response. Available links: ${JSON.stringify(searchResult.links).substring(0, 500)}`);
-      return res.status(404).json({ error: '1080p or 720p MP4 quality not found on y2meta' });
+      logMessage('[PROXY v3] Failed to extract target quality key (1080p/720p MP4) from HTML.', 'ERROR');
+      return res.status(500).json({ error: 'Could not find 1080p/720p MP4 download option on y2meta. The page content might have changed.' });
     }
 
-    // Step 2: Convert video with the obtained key
-    const convertPostData = querystring.stringify({
-      vid: videoId,
-      k: targetQualityKey
-    });
+    const convertPostData = querystring.stringify({ vid: videoId, k: targetQualityKey });
     const convertOptions = {
       hostname: 'y2meta.net',
       port: 443,
@@ -489,44 +483,44 @@ app.post('/api/fetch-y2meta-download-link', express.json(), async (req, res) => 
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(convertPostData),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36',
         'X-Requested-With': 'XMLHttpRequest',
         'Origin': 'https://y2meta.net',
-        'Referer': 'https://y2meta.net/en-us3/' // Referer might be important
+        'Referer': pageUrl
       }
     };
     
-    logMessage(`[PROXY] Step 2: Requesting conversion from y2meta with vid: ${videoId}, k: ${targetQualityKey}`);
+    logMessage(`[PROXY v3] Step 2: Requesting conversion with vid: ${videoId}, k: ${targetQualityKey}`);
     const convertResult = await makeY2MetaRequest(convertOptions, convertPostData);
-    logMessage(`[PROXY] Step 2: y2meta conversion result received.`);
+    logMessage('[PROXY v3] Step 2: y2meta conversion result received.');
 
     if (!convertResult || (convertResult.status !== 'ok' && convertResult.status !== 'success')) {
-      logMessage(`[PROXY] Step 2: y2meta conversion failed or invalid status: ${JSON.stringify(convertResult)}`);
-      return res.status(500).json({ error: 'Failed to convert video on y2meta (step 2)' });
+      logMessage(`[PROXY v3] Conversion failed: ${JSON.stringify(convertResult)}`, 'ERROR');
+      return res.status(500).json({ error: 'Failed to convert video on y2meta (step 2). Status: ' + (convertResult ? convertResult.status : 'N/A') });
     }
 
     let downloadLink = null;
     if (convertResult.link) {
         downloadLink = convertResult.link;
     } else if (convertResult.result && typeof convertResult.result === 'string') {
-        // Try to extract from HTML <a> tag if present in 'result'
-        const match = convertResult.result.match(/href="([^"]+)"/);
+        const match = convertResult.result.match(/href="([^"]+)"/i);
         if (match && match[1]) {
             downloadLink = match[1];
         }
     }
 
     if (!downloadLink) {
-      logMessage(`[PROXY] Step 2: Direct download link not found in y2meta conversion response: ${JSON.stringify(convertResult)}`);
-      return res.status(500).json({ error: 'Could not extract direct download link from y2meta (step 2)' });
+      logMessage(`[PROXY v3] Direct download link not found: ${JSON.stringify(convertResult)}`, 'ERROR');
+      return res.status(500).json({ error: 'Could not extract direct download link from y2meta (step 2).
+        Response: ' + JSON.stringify(convertResult).substring(0,100) });
     }
     
-    logMessage(`[PROXY] Successfully obtained direct download link: ${downloadLink}`);
+    logMessage(`[PROXY v3] Successfully obtained direct download link: ${downloadLink}`);
     res.json({ downloadLink, videoTitle });
 
   } catch (error) {
-    logMessage(`[PROXY] Error in /api/fetch-y2meta-download-link: ${error.message}`, 'ERROR');
-    console.error(error); // Log full error for server console
+    logMessage(`[PROXY v3] Error in /api/fetch-y2meta-download-link: ${error.message}`, 'ERROR');
+    console.error('[PROXY v3] Full error stack:', error.stack); 
     res.status(500).json({ error: `Proxy error: ${error.message}` });
   }
 });
