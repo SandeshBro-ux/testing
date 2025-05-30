@@ -4,6 +4,20 @@ const YOUTUBE_API_KEY = 'AIzaSyAKkaccfpCX8rfG03CLfkC9u4y2_ZLeRe4';
 let currentVideoId = null;
 let isYoutubeShort = false;
 
+// Helper function to log messages (can be expanded to UI later)
+function logToUI(message, type = 'log') {
+  console[type](`[UI LOG - ${type.toUpperCase()}]: ${message}`);
+  // Example of showing in UI if an element #uiLog exists:
+  // const uiLogEl = document.getElementById('uiLog');
+  // if (uiLogEl) {
+  //   const p = document.createElement('p');
+  //   p.textContent = message;
+  //   p.className = type;
+  //   uiLogEl.appendChild(p);
+  //   uiLogEl.scrollTop = uiLogEl.scrollHeight; // Scroll to bottom
+  // }
+}
+
 // This function is called by the YouTube IFrame API script
 function onYouTubeIframeAPIReady() {
   // Player is initialized on demand by processVideoRequest
