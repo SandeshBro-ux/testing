@@ -478,30 +478,6 @@ button:hover {
   font-weight: bold;
 }
 
-.direct-btn {
-  background: linear-gradient(to right, #00c853, #64dd17);
-  color: white;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-}
-
-.direct-btn::before {
-  content: 'FAST';
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #00c853;
-  color: white;
-  font-size: 10px;
-  padding: 3px 6px;
-  border-radius: 10px;
-  font-weight: bold;
-}
-
 .audio-btn {
   background-color: var(--audio-color);
 }

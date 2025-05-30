@@ -366,10 +366,16 @@ function makeY2MetaRequest(options, postData) {
         data += chunk;
       });
       res.on('end', () => {
-        try {
-          resolve(JSON.parse(data));
-        } catch (e) {
-          reject(new Error('Failed to parse JSON response from y2meta: ' + data));
+        const contentType = res.headers['content-type'];
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error('Failed to parse JSON response from y2meta: ' + data.substring(0, 200) + '...')); // Log only part of data
+          }
+        } else {
+          // If not JSON, it might be an error page or unexpected response
+          reject(new Error(`y2meta returned non-JSON response (Content-Type: ${contentType}). Response snippet: ` + data.substring(0, 200) + '...'));
         }
       });
     });
@@ -392,23 +398,23 @@ app.post('/api/fetch-y2meta-download-link', express.json(), async (req, res) => 
   logMessage(`[PROXY] Received request for y2meta link for: ${youtubeUrl}`);
 
   try {
-    // Step 1: Search for the video on y2meta
+    // Step 1: Search for the video on y2meta - TRYING A DIFFERENT COMMON ENDPOINT
     const searchPostData = querystring.stringify({
       query: youtubeUrl,
       vt: 'mp4' // Specify mp4 format
     });
     const searchOptions = {
-      hostname: 'y2meta.net',
+      hostname: 'y2meta.net', // Keep domain
       port: 443,
-      path: '/en-us3/api/ajaxSearch',
+      path: '/api/ajax', // TRYING NEW PATH for initial search/ping
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(searchPostData),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', // Mimic a browser
-        'X-Requested-With': 'XMLHttpRequest', // Often required by such APIs
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest',
         'Origin': 'https://y2meta.net',
-        'Referer': 'https://y2meta.net/en-us3/'
+        'Referer': 'https://y2meta.net/en-us3/' // Keep specific referer for now
       }
     };
 

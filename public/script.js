@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorDisplayElement = document.getElementById('error');
   const maxQualityEl = document.getElementById('maxQuality');
   const videoDetailsEl = document.getElementById('videoDetails');
-  const downloadMP4Button = document.getElementById('downloadMP4');
   const downloadMP3Button = document.getElementById('downloadMP3');
   const downloadSubtitleBtn = document.getElementById('downloadSubtitles');
   const download1080pButton = document.getElementById('download1080p');
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submitBtn');
   const closeBtn = document.querySelector('.notification-close');
   const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
-  const directDownloadLink = document.getElementById('directDownload');
   const downloadModal = document.getElementById('downloadModal');
   const closeModalBtn = document.querySelector('.close-modal');
   const continueToDownloadBtn = document.getElementById('continueToDownload');
@@ -166,10 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  downloadMP4Button.addEventListener('click', () => {
-    if (currentVideoId) initiateDownload(currentVideoId, 'mp4');
-    else showNotification('Please analyze a video first.', 'error');
-  });
   downloadMP3Button.addEventListener('click', () => {
     if (currentVideoId) initiateDownload(currentVideoId, 'mp3');
     else showNotification('Please analyze a video first.', 'error');
@@ -181,17 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
   download1080pButton.addEventListener('click', () => {
     if (currentVideoId) downloadHD1080p(currentVideoId);
     else showNotification('Please analyze a video first.', 'error');
-  });
-
-  directDownloadLink.addEventListener('click', (e) => {
-    if (currentVideoId) {
-      // Set the href directly to y2meta
-      directDownloadLink.href = `https://y2meta.net/en-us3?url=https://www.youtube.com/watch?v=${currentVideoId}`;
-      showNotification('Opening y2meta.net for direct download...', 'info');
-    } else {
-      e.preventDefault();
-      showNotification('Please analyze a video first.', 'error');
-    }
   });
 
   const features = document.querySelectorAll('.feature');
