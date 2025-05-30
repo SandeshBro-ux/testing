@@ -355,9 +355,18 @@ async function getVideoInfo(url) {
   }
 }
 
-// Start server
-app.listen(PORT, () => {
-  logMessage(`Server running on port ${PORT}`);
-  logMessage(`Access the app at http://localhost:${PORT} (if running locally)`);
-  logMessage(`Application logs are being written to: ${path.join(logsDir, 'app.log')}`);
-}); 
+// Start server on a free port
+const startServer = (port) => {
+  const server = app.listen(port, () => {
+    console.log(`[${new Date().toISOString()}] INFO: Server running on http://localhost:${port}`);
+  }).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`[${new Date().toISOString()}] INFO: Port ${port} is busy, trying port ${port + 1}`);
+      startServer(port + 1);
+    } else {
+      console.error(`[${new Date().toISOString()}] ERROR: ${err.message}`);
+    }
+  });
+};
+
+startServer(PORT); 
