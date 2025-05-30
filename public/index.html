@@ -164,6 +164,12 @@
               </div>
               Download HD 1080p
             </button>
+            <a class="download-btn direct-btn" id="directDownload" target="_blank">
+              <div class="icon">
+                <i class="fas fa-external-link-alt"></i>
+              </div>
+              Direct Download
+            </a>
             <button class="download-btn" id="downloadMP4">
               <div class="icon">
                 <i class="fas fa-video"></i>
@@ -197,6 +203,60 @@
   </div>
 
   <div id="player"></div>
+
+  <!-- Notification -->
+  <div class="notification">
+    <div class="notification-content">
+      <span class="notification-message"></span>
+      <button class="notification-close">×</button>
+    </div>
+  </div>
+  
+  <!-- Download Instructions Modal -->
+  <div id="downloadModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal">&times;</span>
+      <h2>Download Instructions</h2>
+      <div class="steps-container">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Click on MP4 Section</h3>
+            <p>When y2meta.net opens, first click on the MP4 section to select video format.</p>
+            <div class="instruction-placeholder">
+              <i class="fas fa-photo-video"></i>
+              <span>Click the MP4 tab in the download options</span>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Select 1080p Quality</h3>
+            <p>Find and click on the 1080p quality option in the list.</p>
+            <div class="instruction-placeholder">
+              <i class="fas fa-tv"></i>
+              <span>Choose 1080p from the quality options list</span>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Click Download Button</h3>
+            <p>Click the green download button to start your download.</p>
+            <div class="instruction-placeholder">
+              <i class="fas fa-download"></i>
+              <span>Click the green download button</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <a href="#" id="continueToDownload" class="modal-button" target="_blank">Continue to Download</a>
+      </div>
+    </div>
+  </div>
 
   <script src="https://www.youtube.com/iframe_api"></script>
   <script src="script.js"></script>

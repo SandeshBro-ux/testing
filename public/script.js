@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitBtn = document.getElementById('submitBtn');
   const closeBtn = document.querySelector('.notification-close');
   const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
+  const directDownloadLink = document.getElementById('directDownload');
+  const downloadModal = document.getElementById('downloadModal');
+  const closeModalBtn = document.querySelector('.close-modal');
+  const continueToDownloadBtn = document.getElementById('continueToDownload');
 
   // Remove server API key fetch since we're using hardcoded key
   console.log("Using hardcoded API key for immediate functionality");
@@ -179,6 +183,17 @@ document.addEventListener('DOMContentLoaded', () => {
     else showNotification('Please analyze a video first.', 'error');
   });
 
+  directDownloadLink.addEventListener('click', (e) => {
+    if (currentVideoId) {
+      // Set the href directly to y2meta
+      directDownloadLink.href = `https://y2meta.net/en-us3?url=https://www.youtube.com/watch?v=${currentVideoId}`;
+      showNotification('Opening y2meta.net for direct download...', 'info');
+    } else {
+      e.preventDefault();
+      showNotification('Please analyze a video first.', 'error');
+    }
+  });
+
   const features = document.querySelectorAll('.feature');
   features.forEach(feature => {
     feature.addEventListener('mouseenter', () => feature.style.transform = 'translateY(-5px)');
@@ -191,16 +206,76 @@ document.addEventListener('DOMContentLoaded', () => {
     // Use y2meta.net proxy service for downloading
     const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
     showNotification(`Redirecting to download service...`, 'info');
-    window.open(y2metaUrl, '_blank');
+    
+    // Open y2meta in a new tab
+    const newTab = window.open(y2metaUrl, '_blank');
+    
+    // Create a helper script to select format and quality
+    const helperScript = `
+      // This script will run when y2meta.net has loaded
+      setTimeout(function() {
+        // Try to find and click the MP4 section if not already selected
+        const mp4Section = document.querySelector('.mp4-section, [data-format="mp4"], .format-mp4');
+        if (mp4Section && !mp4Section.classList.contains('active')) {
+          mp4Section.click();
+        }
+        
+        // Try to find and click the 1080p option
+        setTimeout(function() {
+          const qualityOptions = document.querySelectorAll('.quality-option, .download-option, .format-option');
+          for (let option of qualityOptions) {
+            if (option.textContent.includes('1080p')) {
+              option.click();
+              
+              // Try to click download button
+              setTimeout(function() {
+                const downloadBtn = document.querySelector('.download-btn, [data-action="download"], .btn-download');
+                if (downloadBtn) downloadBtn.click();
+              }, 500);
+              
+              break;
+            }
+          }
+        }, 1000);
+      }, 2000);
+    `;
+    
+    // Try to execute the helper script in the new tab after y2meta loads
+    try {
+      setTimeout(() => {
+        if (newTab && !newTab.closed) {
+          newTab.eval(helperScript);
+        }
+      }, 3000);
+    } catch (e) {
+      // Silently fail if we can't inject the script due to cross-origin restrictions
+      console.log('Could not inject helper script - cross-origin restrictions');
+    }
   }
 
   function downloadHD1080p(videoId) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    // Use y2meta.net proxy service specifically for 1080p downloads
-    const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
-    showNotification('Redirecting to download service for HD 1080p...', 'info');
-    window.open(y2metaUrl, '_blank');
+    
+    // Set the continue button's href
+    continueToDownloadBtn.href = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
+    
+    // Show the modal with instructions
+    downloadModal.style.display = 'block';
+    
+    showNotification('Follow the instructions to download in HD 1080p', 'info');
   }
+  
+  // Close the modal when the close button is clicked
+  closeModalBtn.addEventListener('click', () => {
+    downloadModal.style.display = 'none';
+  });
+  
+  // Close the modal when clicking outside of it
+  window.addEventListener('click', (event) => {
+    if (event.target === downloadModal) {
+      downloadModal.style.display = 'none';
+    }
+  });
 
   function showNotification(message, type = 'success', duration = 3000) {
     const notification = document.getElementById('notification');
