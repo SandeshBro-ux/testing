@@ -327,18 +327,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear previous logo
         return;
     }
-    fetch(`https://www.googleapis.com/youtube/v3/channels?id=${channelId}&key=${YOUTUBE_API_KEY}&part=snippet`)
+    fetch(`https://www.googleapis.com/youtube/v3/channels?id=${channelId}&key=${YOUTUBE_API_KEY}&part=snippet,statistics`)
       .then(response => response.json())
       .then(data => {
-        if (data.items && data.items.length > 0 && data.items[0].snippet?.thumbnails?.default?.url) {
-          document.getElementById('channelLogo').src = data.items[0].snippet.thumbnails.default.url;
+        if (data.items && data.items.length > 0) {
+          // Set channel logo
+          if (data.items[0].snippet?.thumbnails?.default?.url) {
+            document.getElementById('channelLogo').src = data.items[0].snippet.thumbnails.default.url;
+          }
+          
+          // Set subscriber count
+          if (data.items[0].statistics?.subscriberCount) {
+            const subCount = formatNumber(data.items[0].statistics.subscriberCount);
+            document.getElementById('subscriberCount').textContent = subCount;
+          } else {
+            document.getElementById('subscriberCount').textContent = 'N/A';
+          }
         } else {
-          console.warn("Could not fetch channel logo or logo URL missing.");
+          console.warn("Could not fetch channel data or data missing.");
           if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear logo on failure
+          if(document.getElementById('subscriberCount')) document.getElementById('subscriberCount').textContent = 'N/A';
         }
       }).catch(error => {
-          console.error('Error fetching channel logo:', error);
+          console.error('Error fetching channel data:', error);
           if(document.getElementById('channelLogo')) document.getElementById('channelLogo').src = ''; // Clear logo on error
+          if(document.getElementById('subscriberCount')) document.getElementById('subscriberCount').textContent = 'N/A';
       });
   }
 

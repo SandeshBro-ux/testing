@@ -647,15 +647,31 @@ button:hover {
   object-fit: cover;
 }
 
+.channel-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .channel-info .stat-item {
   margin-bottom: 0 !important;
-  flex: 1;
 }
 
 .channel-name {
   font-size: 0.9em;
   font-weight: 500;
   color: white;
+}
+
+.subscriber-count {
+  font-size: 0.9em;
+  font-weight: 500;
+  color: white;
+  background-color: rgba(255, 0, 0, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .quality-badge {
