@@ -29,9 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Remove server API key fetch since we're using hardcoded key
   console.log("Using hardcoded API key for immediate functionality");
   
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    urlInput.value = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
-  }
   urlInput.focus();
   
   function handleRequest() {
