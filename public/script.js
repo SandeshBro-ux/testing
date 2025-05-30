@@ -20,7 +20,7 @@ function logToUI(message, type = 'log') {
 
 // This function is called by the YouTube IFrame API script
 function onYouTubeIframeAPIReady() {
-  // Player is initialized on demand by processVideoRequest
+  // This function is now empty as player is removed.
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -29,13 +29,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const loader = document.getElementById('loader');
   const resultsEl = document.getElementById('results');
   const errorDisplayElement = document.getElementById('error');
-  const maxQualityEl = document.getElementById('maxQuality');
   const videoDetailsEl = document.getElementById('videoDetails');
   const downloadMP3Button = document.getElementById('downloadMP3');
   const downloadSubtitleBtn = document.getElementById('downloadSubtitles');
   const download1080pButton = document.getElementById('download1080p');
   const notificationElement = document.getElementById('notification');
-  const qualityTextElement = document.querySelector('.quality-text');
   const submitBtn = document.getElementById('submitBtn');
   const closeBtn = document.querySelector('.notification-close');
   const copyDescriptionBtn = document.getElementById('copyDescriptionBtn');
@@ -136,9 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
       displayVideoDetails(videoData); // Populates and shows videoDetailsEl
       fetchChannelLogo(videoData.snippet.channelId); // Async, no await needed here
 
-      // Initialize or update player for quality info
-      initializePlayer(currentVideoId);
-      
       resultsEl.style.display = 'block'; // Show the main results container now that we have details
       showNotification('Video analysis complete!', 'success');
 
@@ -255,96 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => notification.classList.remove('show'), duration);
   }
 
-  function initializePlayer(videoId) {
-    if (typeof YT === 'undefined' || !YT.Player) {
-      logToUI('YouTube API not ready, retrying...', 'warn');
-      setTimeout(() => initializePlayer(videoId), 1000); // Retry if YT API not loaded
-      return;
-    }
-
-    if (player && typeof player.loadVideoById === 'function') {
-      logToUI('Player exists, loading new video.', 'info');
-      player.loadVideoById(videoId);
-    } else {
-      logToUI('Creating new player instance.', 'info');
-      player = new YT.Player('player', {
-        height: '360',
-        width: '640',
-        videoId: videoId,
-        playerVars: {
-          'playsinline': 1,
-          'autoplay': 0, // Ensure autoplay is off by default
-          'controls': 1
-        },
-        events: {
-          'onReady': onPlayerReady,
-          'onStateChange': onPlayerStateChange,
-          'onPlaybackQualityChange': onPlaybackQualityChange,
-          'onError': onPlayerError // Add error handler for player
-        }
-      });
-    }
-  }
-
-  function onPlayerReady(event) {
-    logToUI('Player ready.', 'success');
-    // Player is ready, now you can safely call methods like getAvailableQualityLevels
-    // Example: event.target.playVideo(); // if you want to autoplay (ensure user interaction first)
-    const qualities = event.target.getAvailableQualityLevels();
-    if (qualities && qualities.length > 0) {
-        updateQualityText(qualities[0]); // Update with the first available quality
-    } else {
-        updateQualityText('N/A');
-    }
-    event.target.mute(); // Mute to prevent autoplay sound if playVideo was called
-  }
-
-  function onPlayerStateChange(event) {
-    console.log("Player state changed: " + event.data + " for video: " + player.getVideoData().video_id);
-    // We are interested when the video is cued, playing, or paused as quality levels are usually available then.
-    if (event.data == YT.PlayerState.PLAYING || event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.CUED ) {
-      const levels = player.getAvailableQualityLevels();
-      if (levels && levels.length > 0){
-        console.log("Quality levels found on state change: ", levels);
-        updateQualityDisplayAfterPlayer(levels);
-        if(event.data == YT.PlayerState.PLAYING && player.getCurrentTime() < 2 && player.getCurrentTime() > 0) { 
-            console.log("Stopping video after fetching quality (played for " + player.getCurrentTime() + "s).");
-            player.stopVideo();
-        }
-      } else {
-        console.log("No quality levels found on state change: " + event.data);
-      }
-    }
-  }
-  
-  function updateQualityDisplayAfterPlayer(levels) {
-      let maxQuality = 'Unknown';
-      if (levels && levels.length > 0) {
-          maxQuality = levels[0] === 'auto' && levels.length > 1 ? levels[1] : levels[0];
-      }
-      console.log("Updating quality display with: ", maxQuality);
-      updateQualityDisplay(formatQualityLabel(maxQuality));
-  }
-
-  function formatQualityLabel(quality) {
-    const qualityMap = { 'hd2160': '4K', 'hd1440': '1440p', 'hd1080': '1080p HD', 'hd720': '720p HD', 'large': '480p', 'medium': '360p', 'small': '240p', 'tiny': '144p', 'unknown': 'N/A' };
-    return qualityMap[quality] || quality;
-  }
-
-  function onPlayerError(event) {
-    logToUI(`Player Error: ${event.data}`, 'error');
-    console.error('YouTube Player Error:', event.data);
-    // You could display a message to the user here
-    // Example: document.getElementById('player').innerHTML = '<p>Error loading video player.</p>';
-  }
-
-  function updateQualityDisplay(text) {
-    maxQualityEl.textContent = text;
-    if (qualityTextElement) {
-      qualityTextElement.style.display = isYoutubeShort ? 'none' : 'block';
-    }
-  }
-
   function fetchVideoDetails(videoId) {
     const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${YOUTUBE_API_KEY}&part=snippet,statistics,contentDetails`;
     console.log("Fetching video details from: ", url); // Log the URL being fetched
@@ -443,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('duration-badge').textContent = contentDetails.duration ? formatDuration(contentDetails.duration) : 'N/A';
     
     videoDetailsEl.style.display = 'flex'; 
-    updateQualityDisplay("Loading quality..."); 
   }
 
   function formatNumber(numStr) {
