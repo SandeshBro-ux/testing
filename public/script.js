@@ -201,81 +201,49 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   setupAnimatedPlaceholder(urlInput);
 
-  function initiateDownload(videoId, format) {
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    // Use y2meta.net proxy service for downloading
-    const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
-    showNotification(`Redirecting to download service...`, 'info');
-    
-    // Open y2meta in a new tab
-    const newTab = window.open(y2metaUrl, '_blank');
-    
-    // Create a helper script to select format and quality
-    const helperScript = `
-      // This script will run when y2meta.net has loaded
-      setTimeout(function() {
-        // Try to find and click the MP4 section if not already selected
-        const mp4Section = document.querySelector('.mp4-section, [data-format="mp4"], .format-mp4');
-        if (mp4Section && !mp4Section.classList.contains('active')) {
-          mp4Section.click();
-        }
-        
-        // Try to find and click the 1080p option
-        setTimeout(function() {
-          const qualityOptions = document.querySelectorAll('.quality-option, .download-option, .format-option');
-          for (let option of qualityOptions) {
-            if (option.textContent.includes('1080p')) {
-              option.click();
-              
-              // Try to click download button
-              setTimeout(function() {
-                const downloadBtn = document.querySelector('.download-btn, [data-action="download"], .btn-download');
-                if (downloadBtn) downloadBtn.click();
-              }, 500);
-              
-              break;
-            }
-          }
-        }, 1000);
-      }, 2000);
-    `;
-    
-    // Try to execute the helper script in the new tab after y2meta loads
+  async function downloadHD1080p(videoId) {
+    showNotification('Preparing HD 1080p download via server...', 'info');
     try {
-      setTimeout(() => {
-        if (newTab && !newTab.closed) {
-          newTab.eval(helperScript);
-        }
-      }, 3000);
-    } catch (e) {
-      // Silently fail if we can't inject the script due to cross-origin restrictions
-      console.log('Could not inject helper script - cross-origin restrictions');
+      const response = await fetch('/api/fetch-y2meta-download-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ youtubeUrl: `https://www.youtube.com/watch?v=${videoId}` }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const { downloadLink, videoTitle } = await response.json();
+      
+      if (downloadLink) {
+        showNotification(`Starting download for: ${videoTitle} (1080p MP4)`, 'success');
+        // Trigger download in the current tab
+        const a = document.createElement('a');
+        a.href = downloadLink;
+        // Suggest a filename that includes the title and quality
+        a.download = `${videoTitle.replace(/[\\/:*?"<>|]/g, '')} - 1080p.mp4`; 
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } else {
+        throw new Error('No download link received from server.');
+      }
+    } catch (error) {
+      console.error('Error fetching download link from server:', error);
+      showNotification(`Error preparing download: ${error.message}`, 'error');
     }
   }
 
-  function downloadHD1080p(videoId) {
+  function initiateDownload(videoId, format) {
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    
-    // Set the continue button's href
-    continueToDownloadBtn.href = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
-    
-    // Show the modal with instructions
-    downloadModal.style.display = 'block';
-    
-    showNotification('Follow the instructions to download in HD 1080p', 'info');
+    const y2metaUrl = `https://y2meta.net/en-us3?url=${encodeURIComponent(videoUrl)}`;
+    showNotification(`Redirecting to y2meta.net for ${format.toUpperCase()} download...`, 'info');
+    window.open(y2metaUrl, '_blank'); // Keep this as a redirect for non-1080p for now
   }
-  
-  // Close the modal when the close button is clicked
-  closeModalBtn.addEventListener('click', () => {
-    downloadModal.style.display = 'none';
-  });
-  
-  // Close the modal when clicking outside of it
-  window.addEventListener('click', (event) => {
-    if (event.target === downloadModal) {
-      downloadModal.style.display = 'none';
-    }
-  });
 
   function showNotification(message, type = 'success', duration = 3000) {
     const notification = document.getElementById('notification');
