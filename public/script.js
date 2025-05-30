@@ -123,15 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fetchChannelLogo(videoData.snippet.channelId); // Async, no await needed here
 
       // Initialize or update player for quality info
-      if (player) {
-        player.loadVideoById(currentVideoId);
-      } else {
-        player = new YT.Player('player', {
-          height: '0', width: '0', videoId: currentVideoId,
-          playerVars: { autoplay: 0, mute: 1, controls: 0 },
-          events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
-        });
-      }
+      initializePlayer(currentVideoId);
       
       resultsEl.style.display = 'block'; // Show the main results container now that we have details
       showNotification('Video analysis complete!', 'success');
@@ -249,15 +241,48 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => notification.classList.remove('show'), duration);
   }
 
-  function onPlayerReady(event) {
-    console.log("Player is ready. Attempting to get quality levels for video: " + event.target.getVideoData().video_id);
-    const levels = event.target.getAvailableQualityLevels();
-    if (levels && levels.length > 0) {
-       updateQualityDisplayAfterPlayer(levels);
-    } else {
-       console.log("No quality levels onReady, attempting to play video briefly.");
-       event.target.playVideo(); 
+  function initializePlayer(videoId) {
+    if (typeof YT === 'undefined' || !YT.Player) {
+      logToUI('YouTube API not ready, retrying...', 'warn');
+      setTimeout(() => initializePlayer(videoId), 1000); // Retry if YT API not loaded
+      return;
     }
+
+    if (player && typeof player.loadVideoById === 'function') {
+      logToUI('Player exists, loading new video.', 'info');
+      player.loadVideoById(videoId);
+    } else {
+      logToUI('Creating new player instance.', 'info');
+      player = new YT.Player('player', {
+        height: '360',
+        width: '640',
+        videoId: videoId,
+        playerVars: {
+          'playsinline': 1,
+          'autoplay': 0, // Ensure autoplay is off by default
+          'controls': 1
+        },
+        events: {
+          'onReady': onPlayerReady,
+          'onStateChange': onPlayerStateChange,
+          'onPlaybackQualityChange': onPlaybackQualityChange,
+          'onError': onPlayerError // Add error handler for player
+        }
+      });
+    }
+  }
+
+  function onPlayerReady(event) {
+    logToUI('Player ready.', 'success');
+    // Player is ready, now you can safely call methods like getAvailableQualityLevels
+    // Example: event.target.playVideo(); // if you want to autoplay (ensure user interaction first)
+    const qualities = event.target.getAvailableQualityLevels();
+    if (qualities && qualities.length > 0) {
+        updateQualityText(qualities[0]); // Update with the first available quality
+    } else {
+        updateQualityText('N/A');
+    }
+    event.target.mute(); // Mute to prevent autoplay sound if playVideo was called
   }
 
   function onPlayerStateChange(event) {
@@ -293,17 +318,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function onPlayerError(event) {
-    console.error("Player Error Code:", event.data, "Video ID:", currentVideoId);
-    let playerErrorMsg = 'Error with video player. Quality info may be unavailable.';
-    // See https://developers.google.com/youtube/iframe_api_reference#onError
-    switch(event.data) {
-        case 2: playerErrorMsg = 'Player error: Invalid video ID or request. The video may not exist or is private.'; break;
-        case 5: playerErrorMsg = 'Player error: HTML5 player issue. Try a different browser or update yours.'; break;
-        case 100: playerErrorMsg = 'Player error: Video not found or private.'; break;
-        case 101: case 150: playerErrorMsg = 'Player error: Embedding disabled by the video owner.'; break;
-    }
-    showNotification(playerErrorMsg, 'error');
-    updateQualityDisplay("Player Error");
+    logToUI(`Player Error: ${event.data}`, 'error');
+    console.error('YouTube Player Error:', event.data);
+    // You could display a message to the user here
+    // Example: document.getElementById('player').innerHTML = '<p>Error loading video player.</p>';
   }
 
   function updateQualityDisplay(text) {
